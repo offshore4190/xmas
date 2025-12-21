@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎄 Xmas Dream - 梦幻圣诞树</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: linear-gradient(135deg, #1a050d 0%, #0a0505 50%, #050a0d 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 背景动画星星 */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            width: 90%;
+            padding: 2rem;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .main-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF69B4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            animation: fadeInUp 1s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.2s; }
+        .card:nth-child(2) { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card:hover {
+            transform: translateY(-15px) scale(1.02);
+            border-color: rgba(255, 215, 0, 0.5);
+            box-shadow: 0 25px 60px rgba(255, 215, 0, 0.3),
+                        0 0 80px rgba(255, 215, 0, 0.1);
+        }
+
+        .card-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.4s;
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.2) rotateZ(5deg);
+        }
+
+        .card-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1rem;
+            transition: color 0.3s;
+        }
+
+        .card:nth-child(1):hover .card-title {
+            color: #FFD700;
+        }
+
+        .card:nth-child(2):hover .card-title {
+            color: #FF69B4;
+        }
+
+        .card-description {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-features {
+            width: 100%;
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .card-features li {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-features li:last-child {
+            border-bottom: none;
+        }
+
+        .card-features li i {
+            color: #FFD700;
+            font-size: 0.7rem;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 215, 0, 0.2);
+            color: #FFD700;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            margin-top: 3rem;
+            animation: fadeIn 2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .footer a {
+            color: rgba(255, 215, 0, 0.6);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: #FFD700;
+        }
+
+        .tech-stack {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .tech-badge {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .main-title {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态星空背景 -->
+    <div class="stars" id="stars"></div>
+
+    <div class="container">
+        <!-- 标题区域 -->
+        <div class="title-section">
+            <h1 class="main-title">🎄 XMAS DREAM</h1>
+            <p class="subtitle">Choose Your Experience</p>
+        </div>
+
+        <!-- 卡片区域 -->
+        <div class="cards-container">
+            <!-- 定制版卡片 -->
+            <a href="xmas-custom.html" class="card">
+                <span class="card-badge">POPULAR</span>
+                <div class="card-icon">🎨</div>
+                <h2 class="card-title">Custom Edition</h2>
+                <p class="card-description">
+                    创建专属的3D圣诞树，上传照片、自定义配色、撰写祝福卡片
+                </p>
+                <ul class="card-features">
+                    <li><i class="fa-solid fa-circle"></i> 上传个人照片装饰树</li>
+                    <li><i class="fa-solid fa-circle"></i> 4种预设主题 + 自定义配色</li>
+                    <li><i class="fa-solid fa-circle"></i> 创建个性化祝福卡片</li>
+                    <li><i class="fa-solid fa-circle"></i> 截图分享给好友</li>
+                    <li><i class="fa-solid fa-circle"></i> 背景音乐播放</li>
+                </ul>
+            </a>
+
+            <!-- 手势版卡片 -->
+            <a href="xmas-gesture.html" class="card">
+                <span class="card-badge">AI POWERED</span>
+                <div class="card-icon">🤚</div>
+                <h2 class="card-title">Gesture Mode</h2>
+                <p class="card-description">
+                    使用 AI 摄像头识别手势，体验前沿的沉浸式交互方式
+                </p>
+                <ul class="card-features">
+                    <li><i class="fa-solid fa-circle"></i> MediaPipe 手势识别</li>
+                    <li><i class="fa-solid fa-circle"></i> 握拳聚拢成树</li>
+                    <li><i class="fa-solid fa-circle"></i> 张手粒子炸开</li>
+                    <li><i class="fa-solid fa-circle"></i> 移动手掌控制旋转</li>
+                    <li><i class="fa-solid fa-circle"></i> 实时摄像头预览</li>
+                </ul>
+            </a>
+        </div>
+
+        <!-- 页脚信息 -->
+        <div class="footer">
+            <p>Made with ❤️ by Hao</p>
+            <div class="tech-stack">
+                <span class="tech-badge">React Three Fiber</span>
+                <span class="tech-badge">MediaPipe</span>
+                <span class="tech-badge">Three.js</span>
+                <span class="tech-badge">Tailwind CSS</span>
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.8rem;">
+                <a href="https://github.com/yourusername/xmas-dream" target="_blank">
+                    <i class="fa-brands fa-github"></i> View on GitHub
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 生成随机星星
+        const starsContainer = document.getElementById('stars');
+        const starCount = 100;
+        
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            star.style.opacity = Math.random() * 0.5 + 0.3;
+            starsContainer.appendChild(star);
+        }
+
+        // 卡片点击音效（可选）
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                // 可以添加音效
+            });
+        });
+    </script>
+</body>
+</html>
