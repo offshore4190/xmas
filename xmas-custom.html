@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xmas Dream | Custom Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Inter', sans-serif; user-select: none; }
+        .cinzel { font-family: 'Cinzel', serif; }
+        .songti { font-family: 'Noto Serif SC', serif; }
+        
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
+        .ui-layer { position: absolute; z-index: 20; pointer-events: none; width: 100%; height: 100%; }
+        .interactive { pointer-events: auto !important; }
+        
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.6); display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s; cursor: pointer; backdrop-filter: blur(4px); font-size: 1.1rem;
+        }
+        .icon-btn:hover { background: rgba(255, 215, 0, 0.2); color: #FFD700; border-color: rgba(255, 215, 0, 0.5); transform: scale(1.1); }
+
+        .card-input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #FFD700; font-family: 'Noto Serif SC', serif; padding: 8px 12px; border-radius: 4px;
+            outline: none; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem;
+        }
+        .card-input:focus { border-color: #FFD700; background: rgba(255,215,0,0.05); }
+        .card-input::placeholder { color: rgba(255,255,255,0.3); font-style: italic; }
+        
+        input[type="color"] { -webkit-appearance: none; border: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; cursor: pointer; padding: 0; background: none; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "three": "https://esm.sh/three@0.160.0",
+            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.14?external=react,react-dom,three",
+            "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1?external=react,react-dom,three,@react-three/fiber",
+            "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@2.16.0?external=react,react-dom,three,@react-three/fiber",
+            "postprocessing": "https://esm.sh/postprocessing@6.34.1?external=three"
+        }
+    }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react">
+        import React, { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import * as THREE from 'three';
+        import { Canvas, useFrame } from '@react-three/fiber';
+        import { Environment, ContactShadows, Sparkles, Image, Stars, Text } from '@react-three/drei';
+        import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
+
+        const PRESETS = {
+            CLASSIC: { id: 'CLASSIC', name: 'Classic Gold', bg: '#140505', leaf: '#003311', gift: '#8a0303', ornament: '#FFD700', light: '#ffb300', env: 'sunset', roughness: 0.2, metalness: 0.5, bloomInt: 1.5, bloomThresh: 0.4 },
+            FROZEN: { id: 'FROZEN', name: 'Frozen', bg: '#02050a', leaf: '#cceeff', gift: '#ffffff', ornament: '#5D8AA8', light: '#e0ffff', env: 'warehouse', roughness: 0.5, metalness: 0.2, bloomInt: 0.8, bloomThresh: 0.6 },
+            DREAMY: { id: 'DREAMY', name: 'Dreamy Pink', bg: '#1a050d', leaf: '#ffbad0', gift: '#fff0f5', ornament: '#e6e6fa', light: '#ffb6c1', env: 'city', roughness: 0.6, metalness: 0.1, bloomInt: 0.9, bloomThresh: 0.5 },
+            VINTAGE: { id: 'VINTAGE', name: 'Vintage', bg: '#1a0d08', leaf: '#8c4830', gift: '#4a0e0e', ornament: '#ffcc99', light: '#ffaa66', env: 'sunset', roughness: 0.5, metalness: 0.4, bloomInt: 1.0, bloomThresh: 0.5 }
+        };
+
+        const COUNT_LEAVES = 7500;
+        const COUNT_RIBBON = 600;
+        const MUSIC_URL = "https://cdn.pixabay.com/download/audio/2022/11/22/audio_febc508520.mp3";
+
+        const getTreePos = (i, total) => {
+            const ratio = i / total;
+            const h = ratio * 24 - 12;
+            const maxRadius = 9.5;
+            const radius = Math.max(0, (1 - ratio) * maxRadius);
+            const angle = i * 0.15 + (Math.random() * Math.PI * 0.5);
+            return { pos: [Math.cos(angle) * radius, h, Math.sin(angle) * radius], type: i%35===0?'gift':i%50===0?'ornament':'leaf' };
+        };
+
+        const getRibbonPos = (i, total) => {
+            const ratio = i / total;
+            const h = ratio * 18 - 9;
+            const angle = ratio * 6 * Math.PI;
+            const radius = ((1 - ratio) * (10.5 - 1.5)) + 1.5;
+            return [Math.cos(angle) * radius, h, Math.sin(angle) * radius];
+        };
+
+        const getExplodePos = () => {
+            const r = 35 + Math.random() * 20;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            return [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)];
+        };
+
+        const createStarShape = () => {
+            const shape = new THREE.Shape();
+            const points = 5;
+            for (let i = 0; i < points * 2; i++) {
+                const r = i % 2 === 0 ? 1.2 : 0.5;
+                const a = (i / 10) * Math.PI * 2;
+                if (i === 0) shape.moveTo(Math.cos(a+Math.PI/2)*r, Math.sin(a+Math.PI/2)*r);
+                else shape.lineTo(Math.cos(a+Math.PI/2)*r, Math.sin(a+Math.PI/2)*r);
+            }
+            shape.closePath();
+            return shape;
+        };
+
+        function Greeting3D({ to, message }) {
+            const fontUrl = "https://fonts.gstatic.com/s/notoserifsc/v21/nfkPcmf95Vjldv3nftalP5XU0s2Z.woff";
+            return (
+                <group position={[16, 6, 0]}>
+                    {to && <Text font={fontUrl} fontSize={1.8} color="#FFD700" position={[0, 3, 0]} anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="#5a3d00">To: {to}</Text>}
+                    {message && <Text font={fontUrl} fontSize={1.2} color="#FFFFFF" position={[0, 0, 0]} anchorX="center" anchorY="top" maxWidth={12} lineHeight={1.5} textAlign="center" outlineWidth={0.01} outlineColor="#000">{message}</Text>}
+                </group>
+            );
+        }
+
+        function RealStar({ mode, theme }) {
+            const ref = useRef();
+            const starShape = useMemo(() => createStarShape(), []);
+            useFrame((state) => {
+                const t = state.clock.elapsedTime;
+                if (!ref.current) return;
+                ref.current.rotation.y = t * 0.4;
+                ref.current.position.y = THREE.MathUtils.lerp(ref.current.position.y, mode === 'TREE' ? 14 : 35, 0.05);
+                const s = mode === 'TREE' ? 1 : 0.01;
+                ref.current.scale.lerp(new THREE.Vector3(s, s, s), 0.1);
+            });
+            return (
+                <group ref={ref} position={[0, 14, 0]}>
+                    <mesh><extrudeGeometry args={[starShape, { steps: 1, depth: 0.4, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 2 }]} /><meshStandardMaterial color={theme.light} emissive={theme.ornament} emissiveIntensity={3} roughness={0.2} metalness={1} toneMapped={false} /></mesh>
+                    <pointLight color={theme.light} intensity={15} distance={20} />
+                    <Sparkles count={50} scale={8} size={10} speed={0.6} opacity={0.8} color="#FFF" />
+                </group>
+            );
+        }
+
+        function Decorations({ mode, theme, onClick }) {
+            const leafRef = useRef(); const ribbonRef = useRef(); const giftRef = useRef(); const ornRef = useRef(); const dummy = useMemo(() => new THREE.Object3D(), []);
+            const { leafData, giftData, ornData, ribbonData } = useMemo(() => {
+                const l=[], g=[], o=[], r=[];
+                for(let i=0; i<COUNT_LEAVES; i++){
+                    const { pos, type } = getTreePos(i, COUNT_LEAVES);
+                    const ePos = getExplodePos();
+                    const data = { tPos: new THREE.Vector3(...pos), ePos: new THREE.Vector3(...ePos), cur: new THREE.Vector3(...ePos), speed: Math.random()*0.04+0.02, phase: Math.random()*Math.PI*2 };
+                    if(type==='gift') g.push(data); else if(type==='ornament') o.push(data); else l.push(data);
+                }
+                for(let i=0; i<COUNT_RIBBON; i++){
+                    const pos = getRibbonPos(i, COUNT_RIBBON);
+                    r.push({ tPos: new THREE.Vector3(...pos), ePos: new THREE.Vector3(...getExplodePos()), cur: new THREE.Vector3(...getExplodePos()), speed: Math.random()*0.04+0.03, phase: i*0.1 });
+                }
+                return { leafData: l, giftData: g, ornData: o, ribbonData: r };
+            }, []);
+
+            useFrame((state) => {
+                const t = state.clock.elapsedTime;
+                const isTree = mode === 'TREE';
+                const isFocus = mode === 'FOCUS';
+                const update = (ref, data, scaleBase, type) => {
+                    if(!ref.current) return;
+                    data.forEach((d, i) => {
+                        let target = (isTree && !isFocus) ? d.tPos : d.ePos;
+                        d.cur.lerp(target, d.speed);
+                        dummy.position.copy(d.cur);
+                        if(type === 'ribbon' && isTree && !isFocus) {
+                            dummy.position.y += Math.sin(t * 1.0 + d.phase) * 0.3;
+                            dummy.rotation.set(t + d.phase, t + d.phase, 0);
+                        } else dummy.rotation.set(t*0.3+d.phase, t*0.3+d.phase, 0);
+                        let s = isFocus ? scaleBase * 0.1 : scaleBase;
+                        dummy.scale.setScalar((Math.sin(t*2+d.phase)*0.15+1)*s);
+                        dummy.updateMatrix();
+                        ref.current.setMatrixAt(i, dummy.matrix);
+                    });
+                    ref.current.instanceMatrix.needsUpdate = true;
+                };
+                update(leafRef, leafData, 0.25); update(giftRef, giftData, 0.5); update(ornRef, ornData, 0.35); update(ribbonRef, ribbonData, 0.15, 'ribbon');
+            });
+
+            return (
+                <group onClick={onClick}>
+                    <instancedMesh ref={leafRef} args={[null,null,leafData.length]}><octahedronGeometry args={[1,0]}/><meshStandardMaterial color={theme.leaf} roughness={theme.roughness} metalness={theme.metalness}/></instancedMesh>
+                    <instancedMesh ref={ribbonRef} args={[null,null,ribbonData.length]}><tetrahedronGeometry args={[1,0]}/><meshStandardMaterial color="#FFD700" emissive="#FFD700" emissiveIntensity={2} toneMapped={false}/></instancedMesh>
+                    <instancedMesh ref={giftRef} args={[null,null,giftData.length]}><boxGeometry args={[1,1,1]}/><meshStandardMaterial color={theme.gift} roughness={0.4} metalness={0.4}/></instancedMesh>
+                    <instancedMesh ref={ornRef} args={[null,null,ornData.length]}><sphereGeometry args={[1,16,16]}/><meshStandardMaterial color={theme.ornament} roughness={0.2} metalness={0.8} emissive={theme.ornament} emissiveIntensity={0.3}/></instancedMesh>
+                </group>
+            );
+        }
+
+        function Polaroid({ url, index, total, mode, focusId, setFocusId }) {
+            const groupRef = useRef();
+            const [hovered, setHover] = useState(false);
+            const { treePos, explodePos, randomRot } = useMemo(() => {
+                const ratio = index / total;
+                const h = ratio * 18 - 9;
+                const r = 11.0;
+                const angle = index * 2.4;
+                return { treePos: new THREE.Vector3(Math.cos(angle)*r, h, Math.sin(angle)*r), explodePos: new THREE.Vector3(...getExplodePos()), randomRot: [0, 0, (Math.random()-0.5)*0.4] };
+            }, [index, total]);
+
+            const dummy = useMemo(() => new THREE.Object3D(), []);
+
+            useFrame((state, delta) => {
+                if(!groupRef.current) return;
+                const isFocus = mode === 'FOCUS' && focusId === index;
+                const isOther = mode === 'FOCUS' && focusId !== index;
+                
+                if(isFocus) {
+                    groupRef.current.position.lerp(new THREE.Vector3(0, 0, 45), delta * 5);
+                    groupRef.current.rotation.set(0, 0, 0);
+                    groupRef.current.quaternion.slerp(new THREE.Quaternion(0,0,0,1), delta * 10);
+                } 
+                else if(isOther) {
+                    groupRef.current.position.lerp(explodePos, delta * 2.5);
+                } 
+                else {
+                    let targetPos = mode === 'EXPLODE' ? explodePos : treePos;
+                    groupRef.current.position.lerp(targetPos, delta * 2.5);
+                    dummy.position.copy(groupRef.current.position);
+                    dummy.lookAt(0, groupRef.current.position.y, 0);
+                    dummy.rotateY(Math.PI);
+                    dummy.rotateZ(randomRot[2]);
+                    groupRef.current.quaternion.slerp(dummy.quaternion, 0.1);
+                }
+
+                let s = 2.0;
+                if(isFocus) s=1.8;
+                else if(isOther) s=0;
+                else if(mode==='EXPLODE') s=1.5;
+                else if(hovered) s=3.5;
+                
+                groupRef.current.scale.lerp(new THREE.Vector3(s,s,s), 0.1);
+            });
+
+            return (
+                <group ref={groupRef} onClick={(e) => { e.stopPropagation(); setFocusId(focusId === index ? null : index); }} onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor='pointer'; }} onPointerOut={() => { setHover(false); document.body.style.cursor='auto'; }}>
+                    <mesh position={[0,0,0]}><boxGeometry args={[1.2,1.5,0.05]}/><meshStandardMaterial color="#fff" roughness={0.9}/></mesh>
+                    <Image url={url} position={[0,0.15,0.04]} scale={[1,1,1]} toneMapped={false} />
+                </group>
+            );
+        }
+
+        function Scene({ photos, mode, setMode, focusId, setFocusId, theme, toName, message }) {
+            const groupRef = useRef();
+            
+            useFrame((state) => {
+                if (mode === 'FOCUS') return;
+                const targetRot = state.clock.elapsedTime * 0.1;
+                groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetRot, 0.1);
+            });
+
+            return (
+                <>
+                    <Environment preset={theme.env} blur={0.6} />
+                    <color attach="background" args={[theme.bg]} />
+                    <ambientLight intensity={0.5} />
+                    <spotLight position={[20,40,20]} intensity={180} color={theme.light} angle={0.5} penumbra={0.5} castShadow />
+                    <spotLight position={[-20,10,-10]} intensity={100} color={theme.ornament} angle={0.6} />
+                    <pointLight position={[0,-5,0]} intensity={20} color={theme.light} distance={30} decay={2} />
+                    <Stars radius={100} count={3000} factor={4} fade speed={1} color={theme.light} />
+                    
+                    <group ref={groupRef}>
+                        <Decorations mode={mode} theme={theme} onClick={(e) => { if(focusId !== null) setFocusId(null); else setMode(m => m === 'TREE' ? 'EXPLODE' : 'TREE'); }} />
+                        <RealStar mode={mode} theme={theme} />
+                        {photos.map((url, i) => (
+                            <Polaroid key={i} url={url} index={i} total={photos.length} mode={mode} focusId={focusId} setFocusId={setFocusId} />
+                        ))}
+                    </group>
+
+                    {focusId !== null && (
+                        <Polaroid 
+                            key={`focus-${focusId}`} 
+                            url={photos[focusId]} 
+                            index={focusId} 
+                            total={photos.length} 
+                            mode={mode} 
+                            focusId={focusId} 
+                            setFocusId={setFocusId} 
+                        />
+                    )}
+
+                    <Greeting3D to={toName} message={message} />
+
+                    <ContactShadows opacity={0.6} scale={50} blur={3} far={15} color={theme.bg} />
+                    <EffectComposer disableNormalPass>
+                        <Bloom luminanceThreshold={theme.bloomThresh} mipmapBlur intensity={theme.bloomInt} radius={0.5} />
+                        <Noise opacity={0.02} />
+                        <Vignette eskil={false} offset={0.1} darkness={1.0} />
+                    </EffectComposer>
+                </>
+            );
+        }
+
+        function App() {
+            const [photos, setPhotos] = useState([]);
+            const [generated, setGenerated] = useState(false);
+            const [mode, setMode] = useState('TREE');
+            const [theme, setTheme] = useState(PRESETS.CLASSIC);
+            const [focusId, setFocusId] = useState(null);
+            const [toName, setToName] = useState("");
+            const [message, setMessage] = useState("");
+            const [audioPlaying, setAudioPlaying] = useState(false);
+            const audioRef = useRef(new Audio(MUSIC_URL));
+
+            const resetTree = () => { setMode('TREE'); setFocusId(null); };
+            
+            const toggleAudio = () => {
+                if(audioPlaying) audioRef.current.pause();
+                else { audioRef.current.play(); audioRef.current.loop = true; }
+                setAudioPlaying(!audioPlaying);
+            };
+            
+            const handleScreenshot = () => {
+                const canvas = document.querySelector('canvas');
+                requestAnimationFrame(() => {
+                    const link = document.createElement('a');
+                    link.setAttribute('download', 'xmas-dream.png');
+                    link.setAttribute('href', canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream'));
+                    link.click();
+                });
+            };
+            
+            const handleEnter = () => {
+                setGenerated(true);
+                setAudioPlaying(true);
+                audioRef.current.play().catch(e=>console.log("Audio blocked", e));
+                audioRef.current.loop = true;
+            };
+
+            return (
+                <>
+                    <div className="ui-layer">
+                        {!generated && (
+                            <div className="flex flex-col items-center justify-center h-full bg-black/95 text-white z-50 p-6 interactive">
+                                <h1 className="cinzel text-5xl md:text-7xl text-yellow-500 mb-2 text-center drop-shadow-lg">DREAMY XMAS</h1>
+                                <p className="text-gray-500 mb-4 uppercase tracking-widest text-xs">Custom Edition</p>
+                                <div className="glass-panel p-8 rounded-xl flex flex-col items-center max-w-md w-full mb-8 interactive">
+                                    <div className="w-full h-32 border border-dashed border-white/20 hover:border-yellow-500/50 rounded-lg flex flex-col items-center justify-center relative cursor-pointer transition bg-white/5 hover:bg-white/10">
+                                        <input type="file" multiple accept="image/*" onChange={(e) => { if (e.target.files) setPhotos(prev => [...prev, ...Array.from(e.target.files).map(file => URL.createObjectURL(file))]); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" />
+                                        <i className="fa-solid fa-images text-2xl text-white/50 mb-2"></i>
+                                        <p className="text-sm text-gray-300">Upload Photos</p>
+                                        <p className="text-xs text-gray-600 mt-1">{photos.length} selected</p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-4">
+                                    <button onClick={handleEnter} disabled={photos.length===0} className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded font-medium interactive disabled:opacity-30 tracking-wider transition">ENTER</button>
+                                    <a href="xmas-gesture.html" className="px-8 py-3 text-yellow-500 border border-yellow-500/30 hover:bg-yellow-500/10 rounded font-medium text-center tracking-wider transition">TRY GESTURE MODE 🎄</a>
+                                </div>
+                            </div>
+                        )}
+
+                        {generated && (
+                            <>
+                                <div className="absolute top-0 w-full p-6 flex justify-between items-start pointer-events-none">
+                                    <h2 className="cinzel text-xl text-yellow-500 drop-shadow-lg">{theme.name}</h2>
+                                    <div className="flex gap-3 interactive">
+                                        <button onClick={resetTree} className="icon-btn" title="Reset"><i className="fa-solid fa-rotate-right"></i></button>
+                                        <button onClick={handleScreenshot} className="icon-btn" title="Capture"><i className="fa-solid fa-camera"></i></button>
+                                        <button onClick={toggleAudio} className="icon-btn" title="Audio">{audioPlaying ? <i className="fa-solid fa-volume-high"></i> : <i className="fa-solid fa-volume-xmark"></i>}</button>
+                                        <button onClick={() => {if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen();}} className="icon-btn" title="Fullscreen"><i className="fa-solid fa-expand"></i></button>
+                                        <a href="xmas-gesture.html" className="icon-btn" title="Gesture Mode"><i className="fa-solid fa-hand"></i></a>
+                                    </div>
+                                </div>
+
+                                <div className="absolute top-24 left-6 flex flex-col gap-3 interactive">
+                                    {Object.values(PRESETS).map(p => (
+                                        <button key={p.id} onClick={() => setTheme(p)} className={`glass-panel px-4 py-2 rounded-lg text-sm text-left transition hover:scale-105 flex items-center gap-2 ${theme.id === p.id ? 'border-yellow-500 text-yellow-500' : 'text-gray-300'}`}>
+                                            <div className="w-3 h-3 rounded-full shadow-[0_0_5px_currentColor]" style={{backgroundColor: p.leaf}}></div> {p.name}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="absolute bottom-6 right-6 flex flex-col items-end gap-4 pointer-events-none">
+                                    <div className="glass-panel p-4 rounded-xl interactive w-64">
+                                        <h3 className="text-xs text-white/50 uppercase tracking-widest mb-3">Greeting Card</h3>
+                                        <input type="text" placeholder="To..." className="card-input" maxLength="20" onChange={(e) => setToName(e.target.value)} />
+                                        <textarea rows="2" placeholder="Message..." className="card-input" maxLength="50" style={{resize:'none'}} onChange={(e) => setMessage(e.target.value)}></textarea>
+                                    </div>
+                                    
+                                    <div className="glass-panel p-4 rounded-xl interactive flex flex-col gap-3 pointer-events-auto w-64">
+                                        <h3 className="text-xs text-white/50 uppercase tracking-widest mb-1">Colorize</h3>
+                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Leaves</span><input type="color" value={theme.leaf} onChange={(e) => setTheme({...theme, leaf: e.target.value})} /></div>
+                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Lights</span><input type="color" value={theme.light} onChange={(e) => setTheme({...theme, light: e.target.value})} /></div>
+                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Background</span><input type="color" value={theme.bg} onChange={(e) => setTheme({...theme, bg: e.target.value})} /></div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div id="canvas-container">
+                        <Canvas shadows gl={{ preserveDrawingBuffer: true }} camera={{ position: [0, 0, 55], fov: 35 }} dpr={[1, 1.5]}>
+                            <Suspense fallback={null}>
+                                <Scene photos={photos} mode={focusId !== null ? 'FOCUS' : mode} setMode={setMode} focusId={focusId} setFocusId={setFocusId} theme={theme} toName={toName} message={message} />
+                            </Suspense>
+                        </Canvas>
+                    </div>
+                </>
+            );
+        }
+
+        createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
+

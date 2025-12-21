@@ -1,0 +1,50 @@
+# 备份文件
+*.backup.html
+*.backup*.html
+
+# 临时文件
+*.tmp
+*.temp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 不需要的旧版本
+christmas.html
+christmas copy.html
+old.html
+xmas.html
+xmasfinal.html
+earthonline.html
+globalcovid19.html
+radio online.html
+handcontroller.html
+
+# 数据文件
+*.csv
+
+# Python
+*.py
+__pycache__/
+*.pyc
+
+# 文档备份
+*_FIX.md
+GESTURE_*.md
+XMASFINAL_*.md
+DUAL_FILE_ARCHITECTURE.md
+
+# 图片（如果太大可以排除）
+*.jpg
+*.jpeg
+*.png
+

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xmas Dream | Gesture Mode</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Cinzel', serif; user-select: none; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
+        
+        #hand-cursor {
+            width: 40px; height: 40px; position: fixed; top: 0; left: 0;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 100;
+            display: none; transition: transform 0.1s ease-out;
+        }
+        #hand-cursor::before {
+            content: ''; display: block; width: 100%; height: 100%;
+            border: 2px solid #ffb6c1; border-radius: 50%;
+            box-shadow: 0 0 15px #ffb6c1; transition: all 0.2s;
+        }
+        #hand-cursor.pinching::before { background-color: rgba(255, 182, 193, 0.8); transform: scale(0.6); }
+        #hand-cursor.visible { display: block; }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "three": "https://esm.sh/three@0.160.0",
+            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.15.14?external=react,react-dom,three",
+            "@react-three/drei": "https://esm.sh/@react-three/drei@9.96.1?external=react,react-dom,three,@react-three/fiber",
+            "@react-three/postprocessing": "https://esm.sh/@react-three/postprocessing@2.16.0?external=react,react-dom,three,@react-three/fiber",
+            "postprocessing": "https://esm.sh/postprocessing@6.34.1?external=three",
+            "@mediapipe/tasks-vision": "https://esm.sh/@mediapipe/tasks-vision@0.10.9"
+        }
+    }
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module" data-presets="react">
+        import React, { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import * as THREE from 'three';
+        import { Canvas, useFrame } from '@react-three/fiber';
+        import { Environment, ContactShadows, Sparkles, Stars } from '@react-three/drei';
+        import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
+        import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
+
+        const THEME = {
+            bg: '#1a050d',      // 深粉紫背景
+            pink1: '#FFB7C5',   // 浅粉
+            pink2: '#FF69B4',   // 深粉
+            white: '#FFFFFF',   // 宝石白
+            purple: '#E6E6FA',  // 淡紫
+            light: '#FFC0CB'    // 粉色光
+        };
+
+        const COUNT_LEAVES = 6000;
+        const COUNT_DECOR = 500;
+        const COUNT_RIBBON = 800;
+
+        // --- 辅助函数 ---
+        const getRibbonPos = (i, total) => {
+            const ratio = i / total;
+            const h = ratio * 20 - 10; 
+            const turns = 3 * Math.PI * 2; // 3圈
+            const angle = ratio * turns;
+            const radius = ((1 - ratio) * 8) + 2; // 锥形螺旋
+            return [Math.cos(angle) * radius, h, Math.sin(angle) * radius];
+        };
+
+        const getTreePos = (i, total) => {
+            const ratio = i / total;
+            const h = ratio * 24 - 12;
+            const maxRadius = 9.5;
+            const radius = Math.max(0, (1 - ratio) * maxRadius);
+            const angle = i * 0.15 + (Math.random() * Math.PI * 0.5);
+            return [Math.cos(angle) * radius, h, Math.sin(angle) * radius];
+        };
+
+        const getExplodePos = () => {
+            const r = 35 + Math.random() * 20;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            return [r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi)];
+        };
+
+        const createStarShape = () => {
+            const shape = new THREE.Shape();
+            for (let i = 0; i < 10; i++) {
+                const r = i % 2 === 0 ? 1.2 : 0.5;
+                const a = (i / 10) * Math.PI * 2;
+                if (i === 0) shape.moveTo(Math.cos(a+Math.PI/2)*r, Math.sin(a+Math.PI/2)*r);
+                else shape.lineTo(Math.cos(a+Math.PI/2)*r, Math.sin(a+Math.PI/2)*r);
+            }
+            shape.closePath();
+            return shape;
+        };
+
+        function Particles({ mode }) {
+            const leafRef = useRef();
+            const decorRef = useRef();
+            const ribbonRef = useRef();
+            const dummy = useMemo(() => new THREE.Object3D(), []);
+            
+            const { leafData, decorData, ribbonData } = useMemo(() => {
+                const l = [], d = [], r = [];
+                
+                // 1. 树叶 (粉色八面体)
+                for (let i = 0; i < COUNT_LEAVES; i++) {
+                    l.push({
+                        treePos: new THREE.Vector3(...getTreePos(i, COUNT_LEAVES)),
+                        explodePos: new THREE.Vector3(...getExplodePos()),
+                        current: new THREE.Vector3(...getExplodePos()),
+                        speed: 0.02 + Math.random() * 0.04,
+                        phase: Math.random() * Math.PI * 2,
+                        color: Math.random() > 0.5 ? THEME.pink1 : THEME.pink2
+                    });
+                }
+
+                // 2. 装饰 (宝石/镜面)
+                for (let i = 0; i < COUNT_DECOR; i++) {
+                    d.push({
+                        treePos: new THREE.Vector3(...getTreePos(i, COUNT_DECOR)),
+                        explodePos: new THREE.Vector3(...getExplodePos()),
+                        current: new THREE.Vector3(...getExplodePos()),
+                        speed: 0.03 + Math.random() * 0.05,
+                        phase: i * 0.5,
+                        scale: 0.8 + Math.random() * 0.5,
+                        type: Math.random() > 0.6 ? 'box' : 'ico'
+                    });
+                }
+
+                // 3. 丝带 (螺旋四面体)
+                for (let i = 0; i < COUNT_RIBBON; i++) {
+                    r.push({
+                        treePos: new THREE.Vector3(...getRibbonPos(i, COUNT_RIBBON)),
+                        explodePos: new THREE.Vector3(...getExplodePos()),
+                        current: new THREE.Vector3(...getExplodePos()),
+                        speed: 0.04 + Math.random() * 0.03,
+                        phase: i * 0.1
+                    });
+                }
+
+                return { leafData: l, decorData: d, ribbonData: r };
+            }, []);
+
+            useFrame((state) => {
+                const t = state.clock.elapsedTime;
+                const isTree = mode === 'TREE';
+                
+                // 更新叶子
+                if(leafRef.current) {
+                    leafData.forEach((p, i) => {
+                        p.current.lerp(isTree ? p.treePos : p.explodePos, p.speed);
+                        dummy.position.copy(p.current);
+                        dummy.rotation.set(t * 0.5 + p.phase, t * 0.3 + p.phase, 0);
+                        const s = (Math.sin(t * 2 + p.phase) * 0.15 + 1) * 0.25;
+                        dummy.scale.setScalar(s);
+                        dummy.updateMatrix();
+                        leafRef.current.setMatrixAt(i, dummy.matrix);
+                        leafRef.current.setColorAt(i, new THREE.Color(p.color));
+                    });
+                    leafRef.current.instanceMatrix.needsUpdate = true;
+                    leafRef.current.instanceColor.needsUpdate = true;
+                }
+
+                // 更新装饰
+                if(decorRef.current) {
+                    decorData.forEach((p, i) => {
+                        p.current.lerp(isTree ? p.treePos : p.explodePos, p.speed);
+                        dummy.position.copy(p.current);
+                        dummy.rotation.set(t + p.phase, t + p.phase, 0);
+                        const s = (Math.sin(t * 3 + p.phase) * 0.2 + 1) * 0.4 * p.scale;
+                        dummy.scale.setScalar(s);
+                        dummy.updateMatrix();
+                        decorRef.current.setMatrixAt(i, dummy.matrix);
+                    });
+                    decorRef.current.instanceMatrix.needsUpdate = true;
+                }
+
+                // 更新丝带
+                if(ribbonRef.current) {
+                    ribbonData.forEach((p, i) => {
+                        const target = isTree ? p.treePos : p.explodePos;
+                        p.current.lerp(target, p.speed);
+                        dummy.position.copy(p.current);
+                        
+                        // 丝带流动效果
+                        if(isTree) {
+                            dummy.position.y += Math.sin(t * 2 + p.phase) * 0.2;
+                            dummy.lookAt(0, p.current.y, 0);
+                        } else {
+                            dummy.rotation.set(t, t, t);
+                        }
+                        
+                        const s = (Math.sin(t * 5 + p.phase) * 0.3 + 1) * 0.15;
+                        dummy.scale.setScalar(s);
+                        dummy.updateMatrix();
+                        ribbonRef.current.setMatrixAt(i, dummy.matrix);
+                    });
+                    ribbonRef.current.instanceMatrix.needsUpdate = true;
+                }
+            });
+
+            return (
+                <group>
+                    {/* 1. 叶子: 八面体, 半哑光金属 */}
+                    <instancedMesh ref={leafRef} args={[null, null, COUNT_LEAVES]}>
+                        <octahedronGeometry args={[1, 0]} />
+                        <meshStandardMaterial roughness={0.4} metalness={0.6} />
+                    </instancedMesh>
+
+                    {/* 2. 装饰: 几何体, 宝石镜面 (这里简化为一种几何体以提升性能，或者用两个Mesh) */}
+                    <instancedMesh ref={decorRef} args={[null, null, COUNT_DECOR]}>
+                        <icosahedronGeometry args={[1, 0]} />
+                        <meshStandardMaterial color={THEME.white} roughness={0.1} metalness={0.9} emissive={THEME.purple} emissiveIntensity={0.2} />
+                    </instancedMesh>
+
+                    {/* 3. 丝带: 四面体, 发光 */}
+                    <instancedMesh ref={ribbonRef} args={[null, null, COUNT_RIBBON]}>
+                        <tetrahedronGeometry args={[1, 0]} />
+                        <meshStandardMaterial color={THEME.white} emissive={THEME.white} emissiveIntensity={2} toneMapped={false} />
+                    </instancedMesh>
+                </group>
+            );
+        }
+
+        function Star({ mode }) {
+            const ref = useRef();
+            const starShape = useMemo(() => createStarShape(), []);
+            
+            useFrame((state) => {
+                if (!ref.current) return;
+                const t = state.clock.elapsedTime;
+                ref.current.rotation.y = t * 0.4;
+                ref.current.position.y = THREE.MathUtils.lerp(
+                    ref.current.position.y, 
+                    mode === 'TREE' ? 14 : 35, 
+                    0.05
+                );
+                const s = mode === 'TREE' ? 1 : 0.01;
+                ref.current.scale.lerp(new THREE.Vector3(s, s, s), 0.1);
+            });
+
+            return (
+                <group ref={ref} position={[0, 14, 0]}>
+                    <mesh>
+                        <extrudeGeometry args={[starShape, { steps: 1, depth: 0.4, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1, bevelSegments: 2 }]} />
+                        <meshStandardMaterial color={THEME.light} emissive={THEME.ornament} emissiveIntensity={3} toneMapped={false} />
+                    </mesh>
+                    <pointLight color={THEME.light} intensity={15} distance={20} />
+                    <Sparkles count={50} scale={8} size={10} speed={0.6} opacity={0.8} color="#FFF" />
+                </group>
+            );
+        }
+
+        function Scene({ mode, handRot }) {
+            const groupRef = useRef();
+            
+            useFrame(() => {
+                if (!groupRef.current) return;
+                groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, handRot, 0.1);
+            });
+
+            return (
+                <>
+                    <Environment preset="city" blur={0.8} />
+                    <color attach="background" args={[THEME.bg]} />
+                    <ambientLight intensity={0.5} />
+                    <spotLight position={[20,40,20]} intensity={180} color={THEME.light} angle={0.5} penumbra={0.5} />
+                    <spotLight position={[-20,10,-10]} intensity={100} color={THEME.purple} angle={0.6} />
+                    <Stars radius={100} count={3000} factor={4} fade speed={1} color={THEME.light} />
+                    
+                    <group ref={groupRef}>
+                        <Particles mode={mode} />
+                        <Star mode={mode} />
+                    </group>
+
+                    <ContactShadows opacity={0.6} scale={50} blur={3} far={15} color={THEME.bg} />
+                    <EffectComposer disableNormalPass>
+                        <Bloom luminanceThreshold={0.6} mipmapBlur intensity={1.2} radius={0.6} />
+                        <Noise opacity={0.02} />
+                        <Vignette eskil={false} offset={0.1} darkness={1.0} />
+                    </EffectComposer>
+                </>
+            );
+        }
+
+        function App() {
+            const [started, setStarted] = useState(false);
+            const [mode, setMode] = useState('TREE');
+            const videoRef = useRef(null);
+            const [status, setStatus] = useState("AI Init...");
+            const handRotRef = useRef(0);
+            const modeRef = useRef('TREE');
+
+            useEffect(() => {
+                modeRef.current = mode;
+            }, [mode]);
+
+            useEffect(() => {
+                if (!started) return;
+
+                let handLandmarker = null;
+                let running = true;
+                let animationFrameId = null;
+
+                const setup = async () => {
+                    try {
+                        setStatus("Loading AI...");
+                        const vision = await FilesetResolver.forVisionTasks(
+                            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.9/wasm"
+                        );
+                        handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                            baseOptions: { 
+                                modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, 
+                                delegate: "GPU" 
+                            },
+                            runningMode: "VIDEO",
+                            numHands: 1
+                        });
+                        
+                        setStatus("Starting Camera...");
+                        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 } });
+                        
+                        if (videoRef.current) {
+                            videoRef.current.srcObject = stream;
+                            videoRef.current.addEventListener("loadeddata", predict);
+                            setStatus("Active ✋");
+                        }
+                    } catch (e) { 
+                        console.error("Setup error:", e); 
+                        setStatus("Failed");
+                    }
+                };
+
+                let lastVideoTime = -1;
+                const predict = () => {
+                    if (!running || !handLandmarker || !videoRef.current) return;
+                    
+                    if (videoRef.current.currentTime !== lastVideoTime) {
+                        lastVideoTime = videoRef.current.currentTime;
+                        const result = handLandmarker.detectForVideo(videoRef.current, performance.now());
+                        
+                        const cursor = document.getElementById('hand-cursor');
+                        
+                        if (result.landmarks && result.landmarks.length > 0) {
+                            const lm = result.landmarks[0];
+                            const cursorX = 1 - lm[8].x;
+                            const cursorY = lm[8].y;
+                            
+                            if (cursor) {
+                                cursor.classList.add('visible');
+                                cursor.style.left = (cursorX * 100) + '%';
+                                cursor.style.top = (cursorY * 100) + '%';
+                            }
+                            
+                            const thumbTip = lm[4];
+                            const indexTip = lm[8];
+                            const wrist = lm[0];
+                            const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+                            
+                            const tips = [8, 12, 16, 20];
+                            let extendedFingers = 0;
+                            tips.forEach(t => {
+                                if (Math.hypot(lm[t].x - wrist.x, lm[t].y - wrist.y) > 0.15) extendedFingers++;
+                            });
+                            
+                            const currentMode = modeRef.current;
+                            
+                            // 旋转逻辑：仅在手掌张开时允许旋转
+                            if (extendedFingers >= 3) {
+                                handRotRef.current = (0.5 - lm[0].x) * 6;
+                            }
+
+                            // 状态切换逻辑
+                            if (pinchDist < 0.05 || extendedFingers <= 1) {
+                                if (currentMode !== 'TREE') setMode('TREE');
+                                if (cursor) cursor.classList.add('pinching');
+                            } else if (extendedFingers >= 3) {
+                                if (currentMode !== 'EXPLODE') setMode('EXPLODE');
+                                if (cursor) cursor.classList.remove('pinching');
+                            }
+                        } else {
+                            if (cursor) cursor.classList.remove('visible');
+                        }
+                    }
+                    animationFrameId = requestAnimationFrame(predict);
+                };
+
+                setup();
+                
+                return () => { 
+                    running = false;
+                    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                    if (videoRef.current?.srcObject) videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+                    if (handLandmarker) handLandmarker.close();
+                };
+            }, [started]);
+
+            return (
+                <>
+                    <div className="absolute z-10 w-full h-full pointer-events-none">
+                        {!started ? (
+                            <div className="flex flex-col items-center justify-center h-full bg-black/95 text-white pointer-events-auto">
+                                <h1 className="text-6xl text-pink-400 mb-2 text-center">DREAMY XMAS TREE</h1>
+                                <p className="text-gray-400 mb-6 text-sm">🤛 握拳 = 聚拢成树 | ✋ 张手 = 粒子炸开 | 👋 左右移动 = 旋转</p>
+                                <button onClick={() => setStarted(true)} className="px-8 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-500 transition mb-4">
+                                    启动手势控制 🎄
+                                </button>
+                                <a href="xmas-custom.html" className="text-pink-500/50 hover:text-pink-500 text-sm transition">
+                                    ← 返回定制版
+                                </a>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="absolute top-4 left-4 text-white/50 text-xs">{status}</div>
+                                <div className="absolute top-4 right-4 text-pink-400 text-xl font-bold">
+                                    {mode === 'TREE' ? '🎄 TREE' : '💥 EXPLODE'}
+                                </div>
+                                <a href="xmas-custom.html" className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-500/50 hover:text-pink-500 text-xs transition pointer-events-auto">
+                                    ← 返回定制版
+                                </a>
+                                <div className="absolute bottom-4 right-4 pointer-events-auto">
+                                    <div className="relative w-32 h-24 bg-black/50 rounded-lg overflow-hidden border border-pink-500/30">
+                                        <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline muted />
+                                        <div className="absolute top-1 left-2 text-[8px] text-pink-200 uppercase tracking-widest bg-black/60 px-2 rounded">{status}</div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div id="hand-cursor"></div>
+
+                    <div id="canvas-container">
+                        <Canvas shadows camera={{ position: [0, 0, 55], fov: 35 }} dpr={[1, 1.5]}>
+                            <Suspense fallback={null}>
+                                <Scene mode={mode} handRot={handRotRef.current} />
+                            </Suspense>
+                        </Canvas>
+                    </div>
+                </>
+            );
+        }
+
+        createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
+
