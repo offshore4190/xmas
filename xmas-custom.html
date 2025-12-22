@@ -6,7 +6,7 @@
     <title>Xmas Dream | Custom Edition</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Inter:wght@300;500&family=Mountains+of+Christmas:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -36,8 +36,8 @@
 
         .card-input {
             width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: #FFD700; font-family: 'Noto Serif SC', serif; padding: 8px 12px; border-radius: 4px;
-            outline: none; transition: all 0.3s; margin-bottom: 8px; font-size: 0.9rem;
+            color: #FFD700; font-family: 'Mountains of Christmas', cursive; padding: 8px 12px; border-radius: 4px;
+            outline: none; transition: all 0.3s; margin-bottom: 8px; font-size: 1rem; font-weight: 700;
         }
         .card-input:focus { border-color: #FFD700; background: rgba(255,215,0,0.05); }
         .card-input::placeholder { color: rgba(255,255,255,0.3); font-style: italic; }
@@ -123,14 +123,17 @@
             return shape;
         };
 
-        function Greeting3D({ to, message }) {
+        function Greeting3D({ to, message, capturing }) {
             const viewport = useThree((state) => state.viewport);
             const isMobile = viewport.width < 25;
-            const fontUrl = "https://fonts.gstatic.com/s/notoserifsc/v21/nfkPcmf95Vjldv3nftalP5XU0s2Z.woff";
-            
+            const fontUrl = "https://fonts.gstatic.com/s/mountainsofchristmas/v24/3y9z6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7eBGqJFPs.ttf";
+
+            // 截图时隐藏 3D 文字
+            if (capturing) return null;
+
             const pos = isMobile ? [6, 12, 0] : [16, 6, 0];
             const scale = isMobile ? 0.6 : 1;
-            
+
             return (
                 <group position={pos} scale={scale}>
                     {to && <Text font={fontUrl} fontSize={1.8} color="#FFD700" position={[0, 3, 0]} anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="#5a3d00">To: {to}</Text>}
@@ -263,7 +266,7 @@
             );
         }
 
-        function Scene({ photos, mode, setMode, focusId, setFocusId, theme, toName, message }) {
+        function Scene({ photos, mode, setMode, focusId, setFocusId, theme, toName, message, capturing }) {
             const groupRef = useRef();
             
             useFrame((state) => {
@@ -302,7 +305,7 @@
                         />
                     )}
 
-                    <Greeting3D to={toName} message={message} />
+                    <Greeting3D to={toName} message={message} capturing={capturing} />
 
                     <ContactShadows opacity={0.6} scale={50} blur={3} far={15} color={theme.bg} />
                     <EffectComposer disableNormalPass>
@@ -324,6 +327,7 @@
             const [message, setMessage] = useState("");
             const [audioPlaying, setAudioPlaying] = useState(false);
             const [activePanel, setActivePanel] = useState(null);
+            const [capturing, setCapturing] = useState(false);  // 新增：截图状态
             const audioRef = useRef(new Audio(MUSIC_URL));
 
             const resetTree = () => { setMode('TREE'); setFocusId(null); };
@@ -335,102 +339,124 @@
             };
             
             const handleScreenshot = () => {
-                const canvas = document.querySelector('canvas');
-                
-                // 创建临时 Canvas
-                const tempCanvas = document.createElement('canvas');
-                const ctx = tempCanvas.getContext('2d');
-                
-                // 固定使用移动端竖版比例 (9:16)
-                const CARD_RATIO = 9/16;
-                
-                // 设置导出分辨率 (宽度固定 1080px，高度自适应)
-                const exportW = 1080;
-                const exportH = exportW / CARD_RATIO; // 1920px
-                
-                tempCanvas.width = exportW;
-                tempCanvas.height = exportH;
-                
-                // 1. 绘制贺卡背景 (米白色)
-                ctx.fillStyle = '#FDFBF7';
-                ctx.fillRect(0, 0, exportW, exportH);
-                
-                // 2. 计算图片区域 (缩小留白，紧凑布局)
-                // 顶部留白给文字，底部留白给Logo
-                const marginTop = exportH * 0.08;    // 顶部预留 8% (原来15%)
-                const marginBottom = exportH * 0.08; // 底部预留 8% (原来10%)
-                const marginSide = exportW * 0.04;   // 两侧留白 4% (原来8%)
-                
-                const drawW = exportW - 2 * marginSide;
-                const drawH = exportH - marginTop - marginBottom;
-                
-                // 3. 计算源图像裁剪区域
-                // 为了保证完整显示，使用 "Contain" 模式而不是 "Cover"
-                // 这样树的完整高度都能被包含进去
-                const targetAspect = drawW / drawH;
-                const sourceAspect = canvas.width / canvas.height;
-                
-                let sW, sH, sX, sY;
-                
-                if (sourceAspect > targetAspect) {
-                    // 源图更宽，以宽为基准 fit
-                    // 但这里我们希望树(通常在中间)完整，所以我们还是采用 Cover 模式
-                    // 只要 Zoom 足够小，就能包含全部
-                    sH = canvas.height;
-                    sW = sH * targetAspect;
-                } else {
-                    // 源图更高，以高为基准
-                    sW = canvas.width;
-                    sH = sW / targetAspect;
-                }
-                
-                // 关键修正：为了确保树和文字完全显示，我们"缩小"截图区域的视野
-                // 也就是在源Canvas上取更大的范围 (Zoom Out)
-                // 如果是移动端屏幕，本身就是竖屏，几乎1:1
-                // 如果是桌面宽屏，我们需要取中间的竖条
-                
-                // 强制缩放系数：0.5 (缩小视野，容纳更多内容)
-                // 调整：减少 Zoom Out 程度，让物体在框内更大 (0.55 -> 0.75)
-                const zoom = 0.75; 
-                
-                // 重新计算源矩形：基于中心点放大采样区域
-                // 注意：这里逻辑反过来，我们在 Canvas 上采样的区域要比 sW/sH 大
-                // 才能在最终图上显得"物体变小了/内容变多了"
-                const sampleW = sW / zoom;
-                const sampleH = sH / zoom;
-                
-                const sampleX = (canvas.width - sampleW) / 2;
-                const sampleY = (canvas.height - sampleH) / 2;
+                // 第一步：隐藏 3D 文字
+                setCapturing(true);
 
-                // 4. 绘制截图内容
-                ctx.drawImage(canvas, sampleX, sampleY, sampleW, sampleH, marginSide, marginTop, drawW, drawH);
-                
-                // 5. 绘制金色装饰线 (内框)
-                ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)';
-                ctx.lineWidth = 3;
-                const lineOffset = 20;
-                ctx.strokeRect(lineOffset, lineOffset, exportW - 2 * lineOffset, exportH - 2 * lineOffset);
+                // 第二步：等待一帧让 3D 文字消失
+                setTimeout(() => {
+                    const canvas = document.querySelector('canvas');
 
-                // 6. 添加 Logo/文字
-                // 底部 Logo
-                ctx.font = `40px "Cinzel", serif`;
-                ctx.fillStyle = 'rgba(0,0,0,0.6)';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('XMAS DREAM', exportW / 2, exportH - marginBottom / 2);
-                
-                // 顶部装饰性文字 (可选，如果用户没填 To)
-                // 如果用户填了 3D 文字，已经在截图里了。这里只加个装饰
-                ctx.font = `24px "Inter", sans-serif`;
-                ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                ctx.fillText('MERRY CHRISTMAS', exportW / 2, marginTop / 2);
+                    // 创建临时 Canvas
+                    const tempCanvas = document.createElement('canvas');
+                    const ctx = tempCanvas.getContext('2d');
 
-                requestAnimationFrame(() => {
-                    const link = document.createElement('a');
-                    link.setAttribute('download', 'xmas-card-mobile.png');
-                    link.setAttribute('href', tempCanvas.toDataURL('image/png'));
-                    link.click();
-                });
+                    // 固定使用移动端竖版比例 (9:16)
+                    const CARD_RATIO = 9/16;
+
+                    // 设置导出分辨率 (宽度固定 1080px，高度自适应)
+                    const exportW = 1080;
+                    const exportH = exportW / CARD_RATIO; // 1920px
+
+                    tempCanvas.width = exportW;
+                    tempCanvas.height = exportH;
+
+                    // 1. 绘制贺卡背景 (米白色)
+                    ctx.fillStyle = '#FDFBF7';
+                    ctx.fillRect(0, 0, exportW, exportH);
+
+                    // 2. 计算图片区域
+                    const marginTop = exportH * 0.05;      // 顶部留白 5%
+                    const marginBottom = exportH * 0.20;   // 底部留白 20%（给文字）
+                    const marginSide = exportW * 0.05;     // 两侧留白 5%
+
+                    const drawW = exportW - 2 * marginSide;
+                    const drawH = exportH - marginTop - marginBottom;
+
+                    // 3. 计算源图像裁剪区域（居中裁剪）
+                    const targetAspect = drawW / drawH;
+                    const sourceAspect = canvas.width / canvas.height;
+
+                    let sW, sH;
+
+                    if (sourceAspect > targetAspect) {
+                        sH = canvas.height;
+                        sW = sH * targetAspect;
+                    } else {
+                        sW = canvas.width;
+                        sH = sW / targetAspect;
+                    }
+
+                    const zoom = 0.75;
+                    const sampleW = sW / zoom;
+                    const sampleH = sH / zoom;
+
+                    const sampleX = (canvas.width - sampleW) / 2;
+                    const sampleY = (canvas.height - sampleH) / 2;
+
+                    // 4. 绘制截图内容（纯净的圣诞树，无3D文字）
+                    ctx.drawImage(canvas, sampleX, sampleY, sampleW, sampleH, marginSide, marginTop, drawW, drawH);
+
+                    // 5. 绘制金色装饰边框
+                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+                    ctx.lineWidth = 4;
+                    const lineOffset = 15;
+                    ctx.strokeRect(lineOffset, lineOffset, exportW - 2 * lineOffset, exportH - 2 * lineOffset);
+
+                    // 6. 在底部留白区域绘制用户输入的文字
+                    const textAreaTop = marginTop + drawH + 30;  // 底部留白区域起点
+
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+
+                    // 绘制 "To: xxx"
+                    if (toName) {
+                        ctx.font = `bold 48px "Mountains of Christmas", cursive`;
+                        ctx.fillStyle = '#D4AF37';  // 金色
+                        ctx.fillText(`To: ${toName}`, exportW / 2, textAreaTop);
+                    }
+
+                    // 绘制祝福语
+                    if (message) {
+                        ctx.font = `bold 36px "Mountains of Christmas", cursive`;
+                        ctx.fillStyle = '#2C2C2C';  // 深灰色
+
+                        // 自动换行处理
+                        const maxWidth = exportW - 120;
+                        const words = message.split(' ');
+                        let line = '';
+                        let yPos = textAreaTop + (toName ? 70 : 20);
+
+                        for (let word of words) {
+                            const testLine = line + word + ' ';
+                            const metrics = ctx.measureText(testLine);
+
+                            if (metrics.width > maxWidth && line !== '') {
+                                ctx.fillText(line.trim(), exportW / 2, yPos);
+                                line = word + ' ';
+                                yPos += 45;
+                            } else {
+                                line = testLine;
+                            }
+                        }
+                        ctx.fillText(line.trim(), exportW / 2, yPos);
+                    }
+
+                    // 7. 底部水印：XMAS DREAM（不明显）
+                    ctx.font = `24px "Mountains of Christmas", cursive`;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';  // 非常淡的颜色
+                    ctx.fillText('XMAS DREAM', exportW / 2, exportH - 40);
+
+                    // 第三步：下载贺卡
+                    requestAnimationFrame(() => {
+                        const link = document.createElement('a');
+                        link.setAttribute('download', 'xmas-card.png');
+                        link.setAttribute('href', tempCanvas.toDataURL('image/png'));
+                        link.click();
+
+                        // 第四步：恢复 3D 文字显示
+                        setCapturing(false);
+                    });
+                }, 100);  // 等待 100ms 让 3D 文字完全消失
             };
             
             const handleEnter = () => {
@@ -535,7 +561,7 @@
                     <div id="canvas-container">
                         <Canvas shadows gl={{ preserveDrawingBuffer: true }} camera={{ position: [0, 0, 55], fov: 35 }} dpr={[1, 1.5]}>
                             <Suspense fallback={null}>
-                                <Scene photos={photos} mode={focusId !== null ? 'FOCUS' : mode} setMode={setMode} focusId={focusId} setFocusId={setFocusId} theme={theme} toName={toName} message={message} />
+                                <Scene photos={photos} mode={focusId !== null ? 'FOCUS' : mode} setMode={setMode} focusId={focusId} setFocusId={setFocusId} theme={theme} toName={toName} message={message} capturing={capturing} />
                             </Suspense>
                         </Canvas>
                     </div>

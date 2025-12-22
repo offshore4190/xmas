@@ -57,7 +57,7 @@
 
         .title-section {
             text-align: center;
-            margin-bottom: 4rem;
+            margin-bottom: 3rem; /* 减小间距 */
             animation: fadeInDown 1s ease-out;
         }
 
@@ -68,13 +68,13 @@
 
         .main-title {
             font-family: 'Cinzel', serif;
-            font-size: clamp(3rem, 8vw, 6rem);
+            font-size: clamp(2.5rem, 6vw, 5rem); /* 稍微减小字体范围 */
             font-weight: 700;
             background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF69B4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem; /* 减小间距 */
             text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
             animation: glow 2s ease-in-out infinite alternate;
         }
@@ -86,7 +86,7 @@
 
         .subtitle {
             color: rgba(255, 255, 255, 0.6);
-            font-size: 1.1rem;
+            font-size: 1rem; /* 稍微减小 */
             letter-spacing: 0.3em;
             text-transform: uppercase;
             font-weight: 300;
@@ -95,16 +95,16 @@
         .cards-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2.5rem;
-            margin-bottom: 3rem;
+            gap: 2rem; /* 减小间距 */
+            margin-bottom: 2rem; /* 减小间距 */
         }
 
         .card {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 3rem 2rem;
+            border-radius: 20px; /* 稍微减小圆角 */
+            padding: 2rem 1.5rem; /* 减小内边距 */
             text-decoration: none;
             display: flex;
             flex-direction: column;
@@ -149,8 +149,8 @@
         }
 
         .card-icon {
-            font-size: 5rem;
-            margin-bottom: 1.5rem;
+            font-size: 4rem; /* 减小图标大小 */
+            margin-bottom: 1rem; /* 减小间距 */
             transition: transform 0.4s;
         }
 
@@ -160,10 +160,10 @@
 
         .card-title {
             font-family: 'Cinzel', serif;
-            font-size: 2rem;
+            font-size: 1.8rem; /* 减小标题大小 */
             font-weight: 700;
             color: white;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem; /* 减小间距 */
             transition: color 0.3s;
         }
 
@@ -177,23 +177,23 @@
 
         .card-description {
             color: rgba(255, 255, 255, 0.6);
-            font-size: 0.95rem;
-            line-height: 1.6;
+            font-size: 0.9rem; /* 减小描述字体 */
+            line-height: 1.5;
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem; /* 减小间距 */
         }
 
         .card-features {
             width: 100%;
             list-style: none;
             padding: 0;
-            margin: 1rem 0;
+            margin: 0.5rem 0; /* 减小间距 */
         }
 
         .card-features li {
             color: rgba(255, 255, 255, 0.5);
-            font-size: 0.85rem;
-            padding: 0.5rem 0;
+            font-size: 0.8rem; /* 减小列表字体 */
+            padding: 0.4rem 0; /* 减小列表项内边距 */
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
@@ -226,8 +226,8 @@
         .footer {
             text-align: center;
             color: rgba(255, 255, 255, 0.3);
-            font-size: 0.9rem;
-            margin-top: 3rem;
+            font-size: 0.85rem;
+            margin-top: 1.5rem; /* 大幅减小页脚上边距 */
             animation: fadeIn 2s ease-out;
         }
 
