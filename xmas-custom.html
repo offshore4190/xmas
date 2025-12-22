@@ -71,7 +71,7 @@
         import React, { useState, useRef, useEffect, useMemo, Suspense } from 'react';
         import { createRoot } from 'react-dom/client';
         import * as THREE from 'three';
-        import { Canvas, useFrame } from '@react-three/fiber';
+        import { Canvas, useFrame, useThree } from '@react-three/fiber';
         import { Environment, ContactShadows, Sparkles, Image, Stars, Text } from '@react-three/drei';
         import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 
@@ -124,11 +124,17 @@
         };
 
         function Greeting3D({ to, message }) {
+            const viewport = useThree((state) => state.viewport);
+            const isMobile = viewport.width < 25;
             const fontUrl = "https://fonts.gstatic.com/s/notoserifsc/v21/nfkPcmf95Vjldv3nftalP5XU0s2Z.woff";
+            
+            const pos = isMobile ? [6, 12, 0] : [16, 6, 0];
+            const scale = isMobile ? 0.6 : 1;
+            
             return (
-                <group position={[16, 6, 0]}>
+                <group position={pos} scale={scale}>
                     {to && <Text font={fontUrl} fontSize={1.8} color="#FFD700" position={[0, 3, 0]} anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="#5a3d00">To: {to}</Text>}
-                    {message && <Text font={fontUrl} fontSize={1.2} color="#FFFFFF" position={[0, 0, 0]} anchorX="center" anchorY="top" maxWidth={12} lineHeight={1.5} textAlign="center" outlineWidth={0.01} outlineColor="#000">{message}</Text>}
+                    {message && <Text font={fontUrl} fontSize={1.2} color="#FFFFFF" position={[0, 0, 0]} anchorX="center" anchorY="top" maxWidth={isMobile ? 10 : 12} lineHeight={1.5} textAlign="center" outlineWidth={0.01} outlineColor="#000">{message}</Text>}
                 </group>
             );
         }
@@ -317,6 +323,7 @@
             const [toName, setToName] = useState("");
             const [message, setMessage] = useState("");
             const [audioPlaying, setAudioPlaying] = useState(false);
+            const [activePanel, setActivePanel] = useState(null);
             const audioRef = useRef(new Audio(MUSIC_URL));
 
             const resetTree = () => { setMode('TREE'); setFocusId(null); };
@@ -329,10 +336,94 @@
             
             const handleScreenshot = () => {
                 const canvas = document.querySelector('canvas');
+                
+                // 创建临时 Canvas
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+                
+                // 黄金比例 (1.618)
+                const GOLDEN_RATIO = 1.618;
+                const isPortrait = canvas.height > canvas.width;
+                
+                // 计算目标尺寸
+                let cardW, cardH;
+                
+                if (isPortrait) {
+                    // 移动端/竖屏：生成竖版贺卡
+                    // 以宽度为基准，高度符合黄金比例
+                    cardW = canvas.width;
+                    cardH = cardW * GOLDEN_RATIO;
+                } else {
+                    // 桌面端/横屏：生成横版贺卡
+                    if (canvas.width / canvas.height > GOLDEN_RATIO) {
+                       cardH = canvas.height;
+                       cardW = cardH * GOLDEN_RATIO;
+                    } else {
+                       cardW = canvas.width;
+                       cardH = cardW / GOLDEN_RATIO;
+                    }
+                }
+                
+                tempCanvas.width = cardW;
+                tempCanvas.height = cardH;
+                
+                // 1. 绘制贺卡背景 (米白色)
+                ctx.fillStyle = '#FDFBF7';
+                ctx.fillRect(0, 0, cardW, cardH);
+                
+                // 2. 计算图片区域 (留白边框)
+                // 移动端为了避免树太大，增加边框比例 (10%)
+                const borderRatio = isPortrait ? 0.1 : 0.05;
+                const borderX = cardW * borderRatio;
+                const borderY = cardH * borderRatio; // 竖版上下边框可以更多? 保持一致简单
+                
+                const drawW = cardW - 2 * borderX;
+                const drawH = cardH - 2 * borderY;
+                
+                // 3. 计算源图像裁剪区域 (Center Crop)
+                const aspect = drawW / drawH;
+                let sourceW, sourceH;
+                
+                // 适配源图像比例
+                if (canvas.width / canvas.height > aspect) {
+                    sourceH = canvas.height;
+                    sourceW = sourceH * aspect;
+                } else {
+                    sourceW = canvas.width;
+                    sourceH = sourceW / aspect;
+                }
+                
+                // 缩放控制：移动端不放大(1.0)，桌面端稍微聚焦(0.9)
+                // 更新：更紧凑的构图，像贺卡一样聚焦
+                const zoom = isPortrait ? 0.6 : 0.65;
+                sourceW *= zoom;
+                sourceH *= zoom;
+                
+                const sourceX = (canvas.width - sourceW) / 2;
+                const sourceY = (canvas.height - sourceH) / 2;
+                
+                // 4. 绘制截图内容
+                ctx.drawImage(canvas, sourceX, sourceY, sourceW, sourceH, borderX, borderY, drawW, drawH);
+                
+                // 5. 绘制金色装饰线
+                ctx.strokeStyle = 'rgba(212, 175, 55, 0.5)'; // 金色
+                ctx.lineWidth = Math.max(1, cardW * 0.005);
+                const lineOffset = borderX * 0.4;
+                ctx.strokeRect(lineOffset, lineOffset, cardW - 2 * lineOffset, cardH - 2 * lineOffset);
+
+                // 6. 添加 Logo/文字
+                const fontSize = Math.max(12, cardH * 0.02);
+                ctx.font = `${fontSize}px "Cinzel", serif`;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.textAlign = 'center';
+                // 文字位置：竖版放在底部边框区域，横版放在底部
+                const textY = isPortrait ? cardH - (borderY * 0.4) : cardH - lineOffset * 0.5;
+                ctx.fillText('XMAS DREAM', cardW / 2, textY);
+
                 requestAnimationFrame(() => {
                     const link = document.createElement('a');
-                    link.setAttribute('download', 'xmas-dream.png');
-                    link.setAttribute('href', canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream'));
+                    link.setAttribute('download', 'xmas-card.png');
+                    link.setAttribute('href', tempCanvas.toDataURL('image/png'));
                     link.click();
                 });
             };
@@ -387,18 +478,49 @@
                                     ))}
                                 </div>
 
-                                <div className="absolute bottom-6 right-6 flex flex-col items-end gap-4 pointer-events-none">
-                                    <div className="glass-panel p-4 rounded-xl interactive w-64">
-                                        <h3 className="text-xs text-white/50 uppercase tracking-widest mb-3">Greeting Card</h3>
-                                        <input type="text" placeholder="To..." className="card-input" maxLength="20" onChange={(e) => setToName(e.target.value)} />
-                                        <textarea rows="2" placeholder="Message..." className="card-input" maxLength="50" style={{resize:'none'}} onChange={(e) => setMessage(e.target.value)}></textarea>
-                                    </div>
+                                <div className="absolute bottom-6 right-6 flex flex-col items-end gap-3 pointer-events-none z-40">
+                                    {/* 贺卡输入面板 - 仅当 activePanel 为 'greeting' 时显示 */}
+                                    {activePanel === 'greeting' && (
+                                        <div className="glass-panel p-4 rounded-xl interactive w-64 animate-fade-in relative mb-2 md:static md:mb-2 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 md:translate-x-0 md:translate-y-0">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h3 className="text-xs text-white/50 uppercase tracking-widest">Greeting Card</h3>
+                                                <button onClick={() => setActivePanel(null)} className="text-white/50 hover:text-white text-sm"><i className="fa-solid fa-xmark"></i></button>
+                                            </div>
+                                            {/* 注意：添加了 value 属性以保持状态 */}
+                                            <input type="text" placeholder="To..." className="card-input" maxLength="20" value={toName} onChange={(e) => setToName(e.target.value)} />
+                                            <textarea rows="2" placeholder="Message..." className="card-input" maxLength="50" style={{resize:'none'}} value={message} onChange={(e) => setMessage(e.target.value)}></textarea>
+                                        </div>
+                                    )}
                                     
-                                    <div className="glass-panel p-4 rounded-xl interactive flex flex-col gap-3 pointer-events-auto w-64">
-                                        <h3 className="text-xs text-white/50 uppercase tracking-widest mb-1">Colorize</h3>
-                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Leaves</span><input type="color" value={theme.leaf} onChange={(e) => setTheme({...theme, leaf: e.target.value})} /></div>
-                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Lights</span><input type="color" value={theme.light} onChange={(e) => setTheme({...theme, light: e.target.value})} /></div>
-                                        <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Background</span><input type="color" value={theme.bg} onChange={(e) => setTheme({...theme, bg: e.target.value})} /></div>
+                                    {/* 配色面板 - 仅当 activePanel 为 'color' 时显示 */}
+                                    {activePanel === 'color' && (
+                                        <div className="glass-panel p-4 rounded-xl interactive flex flex-col gap-3 pointer-events-auto w-64 animate-fade-in relative mb-2">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h3 className="text-xs text-white/50 uppercase tracking-widest">Colorize</h3>
+                                                <button onClick={() => setActivePanel(null)} className="text-white/50 hover:text-white text-sm"><i className="fa-solid fa-xmark"></i></button>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Leaves</span><input type="color" value={theme.leaf} onChange={(e) => setTheme({...theme, leaf: e.target.value})} /></div>
+                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Lights</span><input type="color" value={theme.light} onChange={(e) => setTheme({...theme, light: e.target.value})} /></div>
+                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Background</span><input type="color" value={theme.bg} onChange={(e) => setTheme({...theme, bg: e.target.value})} /></div>
+                                        </div>
+                                    )}
+
+                                    {/* 折叠后的浮动按钮组 */}
+                                    <div className="flex gap-3 interactive pointer-events-auto">
+                                        <button 
+                                            onClick={() => setActivePanel(activePanel === 'greeting' ? null : 'greeting')} 
+                                            className={`icon-btn ${activePanel === 'greeting' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50' : ''}`}
+                                            title="Edit Card"
+                                        >
+                                            <i className="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        <button 
+                                            onClick={() => setActivePanel(activePanel === 'color' ? null : 'color')} 
+                                            className={`icon-btn ${activePanel === 'color' ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/50' : ''}`}
+                                            title="Colorize"
+                                        >
+                                            <i className="fa-solid fa-palette"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </>
@@ -420,4 +542,6 @@
     </script>
 </body>
 </html>
+
+
 
