@@ -538,7 +538,7 @@
                     ctx.fillStyle = 'rgba(100, 100, 100, 0.15)';  // 非常淡的灰色
                     ctx.fillText('XMAS DREAM', exportW / 2, logoY);
 
-                    // ========== 9. 使用 toBlob() 导出贺卡 (Mobile-Friendly Export) ==========
+                    // ========== 9. 移动端友好的导出 (Mobile-Friendly Export) ==========
                     tempCanvas.toBlob((blob) => {
                         if (!blob) {
                             console.error('贺卡生成失败');
@@ -547,18 +547,40 @@
                         }
 
                         const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `xmas-premium-card-${Date.now()}.png`;
                         
-                        document.body.appendChild(link);
-                        link.click();
+                        // 检测移动端
+                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
                         
-                        setTimeout(() => {
+                        if (isMobile) {
+                            // 移动端：在新窗口打开图片，用户可以长按保存
+                            const newWindow = window.open(url, '_blank');
+                            if (!newWindow) {
+                                // Fallback: 如果弹窗被阻止，使用传统下载
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `xmas-card-${Date.now()}.png`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }
+                            setTimeout(() => {
+                                URL.revokeObjectURL(url);
+                                setCapturing(false);
+                            }, 1000);
+                        } else {
+                            // 桌面端：使用传统下载
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `xmas-card-${Date.now()}.png`;
+                            document.body.appendChild(link);
+                            link.click();
                             document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                            setCapturing(false);
-                        }, 100);
+                            
+                            setTimeout(() => {
+                                URL.revokeObjectURL(url);
+                                setCapturing(false);
+                            }, 100);
+                        }
                     }, 'image/png', 0.95);
                 }, 100);
             };
