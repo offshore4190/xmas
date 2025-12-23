@@ -36,13 +36,13 @@
 
         .card-input {
             width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: #FFD700; font-family: 'Mountains of Christmas', cursive; padding: 8px 12px; border-radius: 4px;
+            color: #FFD700; font-family: 'Mountains of Christmas', 'Noto Serif SC', sans-serif; padding: 8px 12px; border-radius: 4px;
             outline: none; transition: all 0.3s; margin-bottom: 8px; font-size: 1rem; font-weight: 700;
         }
         .card-input:focus { border-color: #FFD700; background: rgba(255,215,0,0.05); }
         .card-input::placeholder { color: rgba(255,255,255,0.3); font-style: italic; }
         
-        input[type="color"] { -webkit-appearance: none; border: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; cursor: pointer; padding: 0; background: none; }
+        input[type="color"] { appearance: none; -webkit-appearance: none; border: none; width: 24px; height: 24px; border-radius: 50%; overflow: hidden; cursor: pointer; padding: 0; background: none; }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
         input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.3); border-radius: 50%; }
     </style>
@@ -76,10 +76,10 @@
         import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing';
 
         const PRESETS = {
-            CLASSIC: { id: 'CLASSIC', name: 'Classic Gold', bg: '#140505', leaf: '#003311', gift: '#8a0303', ornament: '#FFD700', light: '#ffb300', env: 'sunset', roughness: 0.2, metalness: 0.5, bloomInt: 1.5, bloomThresh: 0.4 },
-            FROZEN: { id: 'FROZEN', name: 'Frozen', bg: '#02050a', leaf: '#cceeff', gift: '#ffffff', ornament: '#5D8AA8', light: '#e0ffff', env: 'warehouse', roughness: 0.5, metalness: 0.2, bloomInt: 0.8, bloomThresh: 0.6 },
-            DREAMY: { id: 'DREAMY', name: 'Dreamy Pink', bg: '#1a050d', leaf: '#ffbad0', gift: '#fff0f5', ornament: '#e6e6fa', light: '#ffb6c1', env: 'city', roughness: 0.6, metalness: 0.1, bloomInt: 0.9, bloomThresh: 0.5 },
-            VINTAGE: { id: 'VINTAGE', name: 'Vintage', bg: '#1a0d08', leaf: '#8c4830', gift: '#4a0e0e', ornament: '#ffcc99', light: '#ffaa66', env: 'sunset', roughness: 0.5, metalness: 0.4, bloomInt: 1.0, bloomThresh: 0.5 }
+            CLASSIC: { id: 'CLASSIC', name: 'Classic Gold', bg: '#140505', leaf: '#003311', gift: '#8a0303', ornament: '#FFD700', ribbon: '#FFD700', light: '#ffb300', env: 'sunset', roughness: 0.2, metalness: 0.5, bloomInt: 0.9, bloomThresh: 0.5 },
+            FROZEN: { id: 'FROZEN', name: 'Frozen', bg: '#02050a', leaf: '#cceeff', gift: '#ffffff', ornament: '#5D8AA8', ribbon: '#FFFFFF', light: '#e0ffff', env: 'warehouse', roughness: 0.5, metalness: 0.2, bloomInt: 0.5, bloomThresh: 0.7 },
+            DREAMY: { id: 'DREAMY', name: 'Dreamy Pink', bg: '#1a050d', leaf: '#ffbad0', gift: '#fff0f5', ornament: '#e6e6fa', ribbon: '#FFB6C1', light: '#ffb6c1', env: 'city', roughness: 0.6, metalness: 0.1, bloomInt: 0.6, bloomThresh: 0.6 },
+            VINTAGE: { id: 'VINTAGE', name: 'Vintage', bg: '#1a0d08', leaf: '#8c4830', gift: '#4a0e0e', ornament: '#ffcc99', ribbon: '#FFAA66', light: '#ffaa66', env: 'sunset', roughness: 0.5, metalness: 0.4, bloomInt: 0.7, bloomThresh: 0.6 }
         };
 
         const COUNT_LEAVES = 7500;
@@ -126,7 +126,19 @@
         function Greeting3D({ to, message, capturing }) {
             const viewport = useThree((state) => state.viewport);
             const isMobile = viewport.width < 25;
-            const fontUrl = "https://fonts.gstatic.com/s/mountainsofchristmas/v24/3y9z6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7eBGqJFPs.ttf";
+
+            // 中文使用 Noto Serif SC
+            const fontUrlChinese = "https://fonts.gstatic.com/s/notoserifsc/v34/H4cyBXePl9DZ0Xe7gG9cyOj7uK2-n-D2rd4FY7SCqyWv.ttf";
+
+            // 英文使用 Mountains of Christmas（圣诞主题）
+            const fontUrlEnglish = "https://fonts.gstatic.com/s/mountainsofchristmas/v24/3y9z6a4zcCnn5X0FDyrKi2ZRUBIy8uxoUo7eBGqJFPs.ttf";
+
+            // 检测文本是否包含中文
+            const hasChinese = (text) => /[\u4e00-\u9fa5]/.test(text);
+
+            // 根据内容选择字体
+            const toFont = to && hasChinese(to) ? fontUrlChinese : fontUrlEnglish;
+            const messageFont = message && hasChinese(message) ? fontUrlChinese : fontUrlEnglish;
 
             // 截图时隐藏 3D 文字
             if (capturing) return null;
@@ -136,8 +148,8 @@
 
             return (
                 <group position={pos} scale={scale}>
-                    {to && <Text font={fontUrl} fontSize={1.8} color="#FFD700" position={[0, 3, 0]} anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="#5a3d00">To: {to}</Text>}
-                    {message && <Text font={fontUrl} fontSize={1.2} color="#FFFFFF" position={[0, 0, 0]} anchorX="center" anchorY="top" maxWidth={isMobile ? 10 : 12} lineHeight={1.5} textAlign="center" outlineWidth={0.01} outlineColor="#000">{message}</Text>}
+                    {to && <Text font={toFont} fontSize={1.8} color="#FFD700" position={[0, 3, 0]} anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="#5a3d00">To: {to}</Text>}
+                    {message && <Text font={messageFont} fontSize={1.2} color="#FFFFFF" position={[0, 0, 0]} anchorX="center" anchorY="top" maxWidth={isMobile ? 10 : 12} lineHeight={1.5} textAlign="center" outlineWidth={0.01} outlineColor="#000">{message}</Text>}
                 </group>
             );
         }
@@ -206,7 +218,7 @@
             return (
                 <group onClick={onClick}>
                     <instancedMesh ref={leafRef} args={[null,null,leafData.length]}><octahedronGeometry args={[1,0]}/><meshStandardMaterial color={theme.leaf} roughness={theme.roughness} metalness={theme.metalness}/></instancedMesh>
-                    <instancedMesh ref={ribbonRef} args={[null,null,ribbonData.length]}><tetrahedronGeometry args={[1,0]}/><meshStandardMaterial color="#FFD700" emissive="#FFD700" emissiveIntensity={2} toneMapped={false}/></instancedMesh>
+                    <instancedMesh ref={ribbonRef} args={[null,null,ribbonData.length]}><tetrahedronGeometry args={[1,0]}/><meshStandardMaterial color={theme.ribbon} emissive={theme.ribbon} emissiveIntensity={2} toneMapped={false}/></instancedMesh>
                     <instancedMesh ref={giftRef} args={[null,null,giftData.length]}><boxGeometry args={[1,1,1]}/><meshStandardMaterial color={theme.gift} roughness={0.4} metalness={0.4}/></instancedMesh>
                     <instancedMesh ref={ornRef} args={[null,null,ornData.length]}><sphereGeometry args={[1,16,16]}/><meshStandardMaterial color={theme.ornament} roughness={0.2} metalness={0.8} emissive={theme.ornament} emissiveIntensity={0.3}/></instancedMesh>
                 </group>
@@ -219,7 +231,7 @@
             const { treePos, explodePos, randomRot } = useMemo(() => {
                 const ratio = index / total;
                 const h = ratio * 18 - 9;
-                const r = 11.0;
+                const r = 8.5;
                 const angle = index * 2.4;
                 return { treePos: new THREE.Vector3(Math.cos(angle)*r, h, Math.sin(angle)*r), explodePos: new THREE.Vector3(...getExplodePos()), randomRot: [0, 0, (Math.random()-0.5)*0.4] };
             }, [index, total]);
@@ -260,8 +272,8 @@
 
             return (
                 <group ref={groupRef} onClick={(e) => { e.stopPropagation(); setFocusId(focusId === index ? null : index); }} onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor='pointer'; }} onPointerOut={() => { setHover(false); document.body.style.cursor='auto'; }}>
-                    <mesh position={[0,0,0]}><boxGeometry args={[1.2,1.5,0.05]}/><meshStandardMaterial color="#fff" roughness={0.9}/></mesh>
-                    <Image url={url} position={[0,0.15,0.04]} scale={[1,1,1]} toneMapped={false} />
+                    <mesh position={[0,0,0]}><boxGeometry args={[1.2,1.5,0.05]}/><meshStandardMaterial color="#d8d8d8" roughness={0.95} metalness={0.05}/></mesh>
+                    <Image url={url} position={[0,0.15,0.04]} scale={[1,1,1]} toneMapped={true} transparent opacity={0.95} />
                 </group>
             );
         }
@@ -360,14 +372,32 @@
                     tempCanvas.width = exportW;
                     tempCanvas.height = exportH;
 
-                    // 1. 绘制贺卡背景 (米白色)
-                    ctx.fillStyle = '#FDFBF7';
+                    // ========== 1. 高质量棉纸背景 (Organic Cotton Paper) ==========
+                    ctx.fillStyle = '#FAF9F6';  // 温暖奶白色
                     ctx.fillRect(0, 0, exportW, exportH);
 
-                    // 2. 计算图片区域
-                    const marginTop = exportH * 0.05;      // 顶部留白 5%
-                    const marginBottom = exportH * 0.20;   // 底部留白 20%（给文字）
-                    const marginSide = exportW * 0.05;     // 两侧留白 5%
+                    // 1.5. 细腻纸张纹理 (Subtle Paper Grain)
+                    // 使用Canvas噪点模拟纸张颗粒感（更细腻）
+                    for (let i = 0; i < 4000; i++) {
+                        const x = Math.random() * exportW;
+                        const y = Math.random() * exportH;
+                        const opacity = Math.random() * 0.04 + 0.01; // 3-5% 透明度
+                        const gray = Math.random() * 20 + 230; // 230-250 灰度，更浅
+                        ctx.fillStyle = `rgba(${gray}, ${gray}, ${gray}, ${opacity})`;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+
+                    // 1.6. 优雅暗角效果 (Elegant Vignette)
+                    const vignette = ctx.createRadialGradient(exportW/2, exportH/2, exportH * 0.2, exportW/2, exportH/2, exportH * 0.9);
+                    vignette.addColorStop(0, 'rgba(255, 255, 255, 0.15)'); // 中心更亮
+                    vignette.addColorStop(1, 'rgba(230, 225, 215, 0.12)'); // 边缘温暖米色
+                    ctx.fillStyle = vignette;
+                    ctx.fillRect(0, 0, exportW, exportH);
+
+                    // ========== 2. 计算图片区域 ==========
+                    const marginTop = exportH * 0.08;      // 顶部留白 8%
+                    const marginBottom = exportH * 0.22;   // 底部留白 22%（给文字和装饰）
+                    const marginSide = exportW * 0.06;     // 两侧留白 6%
 
                     const drawW = exportW - 2 * marginSide;
                     const drawH = exportH - marginTop - marginBottom;
@@ -393,70 +423,144 @@
                     const sampleX = (canvas.width - sampleW) / 2;
                     const sampleY = (canvas.height - sampleH) / 2;
 
-                    // 4. 绘制截图内容（纯净的圣诞树，无3D文字）
+                    // ========== 4. "贴在纸上的照片" 效果 (Mounted Photo) ==========
+                    // 4.1. 柔和投影（模拟照片浮在纸上）
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+                    ctx.shadowBlur = 30;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 12;
+                    
+                    // 4.2. 绘制白色照片底板（可选，创造"照片纸"效果）
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(marginSide - 4, marginTop - 4, drawW + 8, drawH + 8);
+                    
+                    // 清除阴影
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+
+                    // ========== 5. 绘制3D截图 (The Photo) ==========
+                    // 5.1. 绘制截图内容（纯净的圣诞树）
                     ctx.drawImage(canvas, sampleX, sampleY, sampleW, sampleH, marginSide, marginTop, drawW, drawH);
 
-                    // 5. 绘制金色装饰边框
-                    ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
-                    ctx.lineWidth = 4;
-                    const lineOffset = 15;
-                    ctx.strokeRect(lineOffset, lineOffset, exportW - 2 * lineOffset, exportH - 2 * lineOffset);
+                    // 5.2. 优雅细边框（可选 - 极简金色描边）
+                    ctx.strokeStyle = 'rgba(197, 160, 89, 0.25)';  // 非常淡的金色
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(marginSide, marginTop, drawW, drawH);
 
-                    // 6. 在底部留白区域绘制用户输入的文字
-                    const textAreaTop = marginTop + drawH + 30;  // 底部留白区域起点
+                    // ========== 6. 极简装饰元素 (Minimalist Accents) ==========
+                    // 去掉繁复的角落花纹，保持简洁
+                    
+                    // 可选：添加非常淡的金色点缀（减少数量，更低调）
+                    for (let i = 0; i < 30; i++) {
+                        const x = Math.random() * exportW;
+                        const y = Math.random() * exportH;
+                        const size = Math.random() * 1.5 + 0.5;
+                        const opacity = Math.random() * 0.08 + 0.02; // 更淡
+                        ctx.fillStyle = `rgba(197, 160, 89, ${opacity})`;
+                        ctx.beginPath();
+                        ctx.arc(x, y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // ========== 7. 优雅文字排版 (Elegant Typography) ==========
+                    const textAreaTop = marginTop + drawH + 40;  // 更靠近照片
 
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'top';
 
-                    // 绘制 "To: xxx"
+                    // 7.1. 极简装饰分隔线（淡化或删除雪花）
+                    ctx.font = `24px "Mountains of Christmas", "Noto Serif SC", serif`;
+                    ctx.fillStyle = 'rgba(197, 160, 89, 0.3)';  // 更淡的金色
+                    ctx.fillText('✧', exportW / 2, textAreaTop);  // 简化为单一星号
+
+                    // 7.2. "To: xxx" (优雅金色 - Cinzel)
                     if (toName) {
-                        ctx.font = `bold 48px "Mountains of Christmas", cursive`;
-                        ctx.fillStyle = '#D4AF37';  // 金色
-                        ctx.fillText(`To: ${toName}`, exportW / 2, textAreaTop);
+                        ctx.font = `500 48px "Cinzel", "Noto Serif SC", serif`;  // 使用 medium weight，不要 bold
+                        
+                        // 柔和金色（不是金属渐变，而是单一柔和色）
+                        ctx.fillStyle = '#B8956A';  // 柔和金棕色
+                        
+                        ctx.fillText(`To: ${toName}`, exportW / 2, textAreaTop + 45);
                     }
 
-                    // 绘制祝福语
+                    // 7.3. 祝福语 (Warm Charcoal / Deep Forest Green)
                     if (message) {
-                        ctx.font = `bold 36px "Mountains of Christmas", cursive`;
-                        ctx.fillStyle = '#2C2C2C';  // 深灰色
+                        ctx.font = `400 36px "Mountains of Christmas", "Noto Serif SC", serif`;  // 使用 normal weight
+                        ctx.fillStyle = '#2C3E2F';  // 深森林绿（温暖又优雅）
+                        // 或者使用： ctx.fillStyle = '#333333';  // 温暖深灰色
 
-                        // 自动换行处理
-                        const maxWidth = exportW - 120;
-                        const words = message.split(' ');
-                        let line = '';
-                        let yPos = textAreaTop + (toName ? 70 : 20);
+                        // 添加极细的阴影（可选）
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+                        ctx.shadowBlur = 2;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 1;
 
-                        for (let word of words) {
-                            const testLine = line + word + ' ';
-                            const metrics = ctx.measureText(testLine);
-
-                            if (metrics.width > maxWidth && line !== '') {
-                                ctx.fillText(line.trim(), exportW / 2, yPos);
-                                line = word + ' ';
-                                yPos += 45;
-                            } else {
-                                line = testLine;
+                        const maxWidth = exportW - 140;
+                        let yPos = textAreaTop + (toName ? 110 : 70);
+                        
+                        const testMetrics = ctx.measureText(message);
+                        
+                        if (testMetrics.width <= maxWidth) {
+                            ctx.fillText(message, exportW / 2, yPos);
+                        } else {
+                            let line = '';
+                            const chars = message.split('');
+                            
+                            for (let i = 0; i < chars.length; i++) {
+                                const testLine = line + chars[i];
+                                const metrics = ctx.measureText(testLine);
+                                
+                                if (metrics.width > maxWidth && line !== '') {
+                                    ctx.fillText(line, exportW / 2, yPos);
+                                    line = chars[i];
+                                    yPos += 45;
+                                } else {
+                                    line = testLine;
+                                }
+                            }
+                            if (line) {
+                                ctx.fillText(line, exportW / 2, yPos);
                             }
                         }
-                        ctx.fillText(line.trim(), exportW / 2, yPos);
+                        
+                        // 清除阴影
+                        ctx.shadowColor = 'transparent';
+                        ctx.shadowBlur = 0;
                     }
 
-                    // 7. 底部水印：XMAS DREAM（不明显）
-                    ctx.font = `24px "Mountains of Christmas", cursive`;
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';  // 非常淡的颜色
-                    ctx.fillText('XMAS DREAM', exportW / 2, exportH - 40);
+                    // ========== 8. 极简水印 (Minimalist Signature) ==========
+                    const logoY = exportH - 50;
+                    
+                    // 去掉分隔线，只保留低调水印文字
+                    ctx.font = `300 20px "Cinzel", "Noto Serif SC", serif`;  // 更轻的字重
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.15)';  // 非常淡的灰色
+                    ctx.fillText('XMAS DREAM', exportW / 2, logoY);
 
-                    // 第三步：下载贺卡
-                    requestAnimationFrame(() => {
+                    // ========== 9. 使用 toBlob() 导出贺卡 (Mobile-Friendly Export) ==========
+                    tempCanvas.toBlob((blob) => {
+                        if (!blob) {
+                            console.error('贺卡生成失败');
+                            setCapturing(false);
+                            return;
+                        }
+
+                        const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
-                        link.setAttribute('download', 'xmas-card.png');
-                        link.setAttribute('href', tempCanvas.toDataURL('image/png'));
+                        link.href = url;
+                        link.download = `xmas-premium-card-${Date.now()}.png`;
+                        
+                        document.body.appendChild(link);
                         link.click();
-
-                        // 第四步：恢复 3D 文字显示
-                        setCapturing(false);
-                    });
-                }, 100);  // 等待 100ms 让 3D 文字完全消失
+                        
+                        setTimeout(() => {
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                            setCapturing(false);
+                        }, 100);
+                    }, 'image/png', 0.95);
+                }, 100);
             };
             
             const handleEnter = () => {
@@ -525,14 +629,63 @@
                                     
                                     {/* 配色面板 - 仅当 activePanel 为 'color' 时显示 */}
                                     {activePanel === 'color' && (
-                                        <div className="glass-panel p-4 rounded-xl interactive flex flex-col gap-3 pointer-events-auto w-64 animate-fade-in relative mb-2">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <h3 className="text-xs text-white/50 uppercase tracking-widest">Colorize</h3>
+                                        <div className="glass-panel p-4 rounded-xl interactive flex flex-col gap-2 pointer-events-auto w-72 animate-fade-in relative mb-2 max-h-[70vh] overflow-y-auto">
+                                            <div className="flex justify-between items-center mb-2 sticky top-0 bg-black/80 -mx-4 px-4 py-2 z-10">
+                                                <h3 className="text-xs text-white/50 uppercase tracking-widest">Color Palette</h3>
                                                 <button onClick={() => setActivePanel(null)} className="text-white/50 hover:text-white text-sm"><i className="fa-solid fa-xmark"></i></button>
                                             </div>
-                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Leaves</span><input type="color" value={theme.leaf} onChange={(e) => setTheme({...theme, leaf: e.target.value})} /></div>
-                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Lights</span><input type="color" value={theme.light} onChange={(e) => setTheme({...theme, light: e.target.value})} /></div>
-                                            <div className="flex items-center justify-between gap-4"><span className="text-[10px] uppercase text-white/50 tracking-wider">Background</span><input type="color" value={theme.bg} onChange={(e) => setTheme({...theme, bg: e.target.value})} /></div>
+                                            
+                                            {/* 树体结构 */}
+                                            <div className="text-[9px] text-white/30 uppercase tracking-wider mb-1 mt-1">Tree Elements</div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>🌿</span>
+                                                    <span>Leaves</span>
+                                                </span>
+                                                <input type="color" value={theme.leaf} onChange={(e) => setTheme({...theme, leaf: e.target.value})} />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>🎁</span>
+                                                    <span>Gifts</span>
+                                                </span>
+                                                <input type="color" value={theme.gift} onChange={(e) => setTheme({...theme, gift: e.target.value})} />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>💎</span>
+                                                    <span>Ornaments</span>
+                                                </span>
+                                                <input type="color" value={theme.ornament} onChange={(e) => setTheme({...theme, ornament: e.target.value})} />
+                                            </div>
+                                            
+                                            {/* 发光元素 */}
+                                            <div className="text-[9px] text-white/30 uppercase tracking-wider mb-1 mt-2">Glowing Elements</div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>🎀</span>
+                                                    <span>Ribbon</span>
+                                                </span>
+                                                <input type="color" value={theme.ribbon} onChange={(e) => setTheme({...theme, ribbon: e.target.value})} />
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>⭐</span>
+                                                    <span>Star & Lights</span>
+                                                </span>
+                                                <input type="color" value={theme.light} onChange={(e) => setTheme({...theme, light: e.target.value})} />
+                                            </div>
+                                            
+                                            {/* 环境 */}
+                                            <div className="border-t border-white/10 my-2"></div>
+                                            <div className="text-[9px] text-white/30 uppercase tracking-wider mb-1">Environment</div>
+                                            <div className="flex items-center justify-between gap-4 py-1 hover:bg-white/5 px-2 rounded transition">
+                                                <span className="text-[11px] text-white/60 tracking-wide flex items-center gap-2">
+                                                    <span>🌌</span>
+                                                    <span>Background</span>
+                                                </span>
+                                                <input type="color" value={theme.bg} onChange={(e) => setTheme({...theme, bg: e.target.value})} />
+                                            </div>
                                         </div>
                                     )}
 
