@@ -48,5 +48,18 @@ DUAL_FILE_ARCHITECTURE.md
 *.jpeg
 *.png
 
+# 测试和示例文件
+example*.html
+hat.html
+chart-*.svg
 
+# 提示文件
+prompt.txt
 
+# 复制和备份文件
+*copy.html
+*.backup
+
+# 旧版本文件夹
+xmas/
+xmas-custom/

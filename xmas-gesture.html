@@ -6,10 +6,10 @@
     <title>Xmas Dream | Gesture Mode</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Mountains+of+Christmas:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Mountains+of+Christmas:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Mountains of Christmas', cursive; user-select: none; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0; }
         
         #hand-cursor {
@@ -24,6 +24,11 @@
         }
         #hand-cursor.pinching::before { background-color: rgba(255, 182, 193, 0.8); transform: scale(0.6); }
         #hand-cursor.visible { display: block; }
+        
+        /* 字体样式 */
+        .title-en { font-family: 'Mountains of Christmas', cursive; }
+        .text-cn { font-family: 'Noto Sans SC', 'PingFang SC', sans-serif; font-weight: 400; letter-spacing: 0.05em; }
+        .status-text { font-family: 'Noto Sans SC', sans-serif; font-weight: 300; }
     </style>
 
     <script type="importmap">
@@ -414,28 +419,28 @@
                     <div className="absolute z-10 w-full h-full pointer-events-none">
                         {!started ? (
                             <div className="flex flex-col items-center justify-center h-full bg-black/95 text-white pointer-events-auto">
-                                <h1 className="text-6xl text-pink-400 mb-2 text-center">DREAMY XMAS TREE</h1>
-                                <p className="text-gray-400 mb-6 text-sm">🤛 握拳 = 聚拢成树 | ✋ 张手 = 粒子炸开 | 👋 左右移动 = 旋转</p>
-                                <button onClick={() => setStarted(true)} className="px-8 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-500 transition mb-4">
+                                <h1 className="title-en text-6xl text-pink-400 mb-2 text-center">DREAMY XMAS TREE</h1>
+                                <p className="text-cn text-gray-400 mb-6 text-sm">🤛 握拳 = 聚拢成树 | ✋ 张手 = 粒子炸开 | 👋 左右移动 = 旋转</p>
+                                <button onClick={() => setStarted(true)} className="text-cn px-8 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-500 transition mb-4">
                                     启动手势控制 🎄
                                 </button>
-                                <a href="xmas-custom.html" className="text-pink-500/50 hover:text-pink-500 text-sm transition">
+                                <a href="xmas-custom.html" className="text-cn text-pink-500/50 hover:text-pink-500 text-sm transition">
                                     ← 返回定制版
                                 </a>
                             </div>
                         ) : (
                             <>
-                                <div className="absolute top-4 left-4 text-white/50 text-xs">{status}</div>
-                                <div className="absolute top-4 right-4 text-pink-400 text-xl font-bold">
+                                <div className="status-text absolute top-4 left-4 text-white/50 text-xs">{status}</div>
+                                <div className="text-cn absolute top-4 right-4 text-pink-400 text-xl font-bold">
                                     {mode === 'TREE' ? '🎄 TREE' : '💥 EXPLODE'}
                                 </div>
-                                <a href="xmas-custom.html" className="absolute top-4 left-1/2 -translate-x-1/2 text-pink-500/50 hover:text-pink-500 text-xs transition pointer-events-auto">
+                                <a href="xmas-custom.html" className="text-cn absolute top-4 left-1/2 -translate-x-1/2 text-pink-500/50 hover:text-pink-500 text-xs transition pointer-events-auto">
                                     ← 返回定制版
                                 </a>
                                 <div className="absolute bottom-4 right-4 pointer-events-auto">
                                     <div className="relative w-32 h-24 bg-black/50 rounded-lg overflow-hidden border border-pink-500/30">
                                         <video ref={videoRef} className="w-full h-full object-cover transform -scale-x-100" autoPlay playsInline muted />
-                                        <div className="absolute top-1 left-2 text-[8px] text-pink-200 uppercase tracking-widest bg-black/60 px-2 rounded">{status}</div>
+                                        <div className="status-text absolute top-1 left-2 text-[8px] text-pink-200 uppercase tracking-widest bg-black/60 px-2 rounded">{status}</div>
                                     </div>
                                 </div>
                             </>
