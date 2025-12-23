@@ -263,6 +263,140 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
+        /* ========== 移动端点击修复 ========== */
+        /* 防止子元素拦截点击事件 */
+        .card > * {
+            pointer-events: none;
+        }
+
+        /* 确保卡片本身可点击 */
+        .card {
+            pointer-events: auto;
+        }
+
+        /* ========== 分享按钮 ========== */
+        .share-button {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #FFD700;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+        }
+
+        .share-button:hover {
+            background: rgba(255, 215, 0, 0.25);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .share-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 分享提示框 */
+        .share-tooltip {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 2rem;
+            z-index: 200;
+            display: none;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        .share-tooltip.active {
+            display: block;
+            animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .share-tooltip h3 {
+            color: #FFD700;
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .share-url {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin-bottom: 1rem;
+            font-family: monospace;
+        }
+
+        .share-buttons {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .share-btn {
+            flex: 1;
+            padding: 0.8rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .share-btn:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .close-share {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .close-share:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
         /* 响应式设计 */
         @media (max-width: 768px) {
             body {
@@ -366,12 +500,50 @@
             .tech-stack {
                 display: none; /* 移动端隐藏技术栈，太占空间 */
             }
+
+            /* 移动端分享按钮调整 */
+            .share-button {
+                width: 48px;
+                height: 48px;
+                top: 1rem;
+                right: 1rem;
+                font-size: 1.2rem;
+            }
+
+            .share-tooltip {
+                width: calc(100% - 2rem);
+                padding: 1.5rem;
+            }
+
+            .share-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <!-- 动态星空背景 -->
     <div class="stars" id="stars"></div>
+
+    <!-- 分享按钮 -->
+    <button class="share-button" onclick="openShareDialog()" title="分享链接">
+        <i class="fa-solid fa-share-nodes"></i>
+    </button>
+
+    <!-- 分享弹窗 -->
+    <div class="share-tooltip" id="shareTooltip">
+        <h3>🎄 分享圣诞梦想</h3>
+        <div class="share-url" id="shareUrl">https://offshore4190.github.io/xmas/</div>
+        <div class="share-buttons">
+            <button class="share-btn" onclick="copyLink()">
+                <i class="fa-solid fa-copy"></i> 复制链接
+            </button>
+            <button class="share-btn" onclick="shareToTwitter()">
+                <i class="fa-brands fa-twitter"></i> Twitter
+            </button>
+        </div>
+        <button class="close-share" onclick="closeShareDialog()">关闭</button>
+    </div>
 
     <div class="container">
         <!-- 标题区域 -->
@@ -383,7 +555,7 @@
         <!-- 卡片区域 -->
         <div class="cards-container">
             <!-- 定制版卡片 -->
-            <a href="xmas-custom.html" class="card">
+            <a href="./xmas-custom.html" class="card">
                 <div class="card-icon">🎨</div>
                 <div class="card-content">
                     <h2 class="card-title">Custom Edition</h2>
@@ -402,7 +574,7 @@
             </a>
 
             <!-- 手势版卡片 -->
-            <a href="xmas-gesture.html" class="card">
+            <a href="./xmas-gesture.html" class="card">
                 <div class="card-icon">🤚</div>
                 <div class="card-content">
                     <h2 class="card-title">Gesture Mode</h2>
@@ -460,6 +632,91 @@
             card.addEventListener('mouseenter', () => {
                 // 可以添加音效
             });
+        });
+
+        // ========== 分享功能 ==========
+        const shareUrl = 'https://offshore4190.github.io/xmas/';
+
+        function openShareDialog() {
+            document.getElementById('shareTooltip').classList.add('active');
+        }
+
+        function closeShareDialog() {
+            document.getElementById('shareTooltip').classList.remove('active');
+        }
+
+        function copyLink() {
+            // 使用现代 Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl)
+                    .then(() => {
+                        // 复制成功提示
+                        const btn = event.target.closest('.share-btn');
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="fa-solid fa-check"></i> 已复制！';
+                        btn.style.background = 'rgba(0, 255, 0, 0.2)';
+
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.style.background = '';
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('复制失败:', err);
+                        fallbackCopyLink();
+                    });
+            } else {
+                // 降级方案
+                fallbackCopyLink();
+            }
+        }
+
+        function fallbackCopyLink() {
+            // 旧版浏览器的降级方案
+            const input = document.createElement('input');
+            input.value = shareUrl;
+            input.style.position = 'fixed';
+            input.style.opacity = '0';
+            document.body.appendChild(input);
+            input.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert('链接已复制到剪贴板！');
+                } else {
+                    alert('复制失败，请手动复制链接');
+                }
+            } catch (err) {
+                alert('复制失败，请手动复制链接');
+            }
+
+            document.body.removeChild(input);
+        }
+
+        function shareToTwitter() {
+            const text = encodeURIComponent('🎄 来体验这个超酷的3D圣诞树！可以上传照片、自定义配色，还有AI手势控制！');
+            const url = encodeURIComponent(shareUrl);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+        }
+
+        // 点击弹窗外部关闭
+        document.addEventListener('click', (e) => {
+            const tooltip = document.getElementById('shareTooltip');
+            const shareButton = document.querySelector('.share-button');
+
+            if (tooltip.classList.contains('active') &&
+                !tooltip.contains(e.target) &&
+                !shareButton.contains(e.target)) {
+                closeShareDialog();
+            }
+        });
+
+        // ESC 键关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeShareDialog();
+            }
         });
     </script>
 </body>
