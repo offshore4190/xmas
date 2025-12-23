@@ -538,8 +538,8 @@
             <button class="share-btn" onclick="copyLink()">
                 <i class="fa-solid fa-copy"></i> 复制链接
             </button>
-            <button class="share-btn" onclick="shareToTwitter()">
-                <i class="fa-brands fa-twitter"></i> Twitter
+            <button class="share-btn" onclick="shareToX()">
+                <i class="fa-brands fa-x-twitter"></i> X
             </button>
         </div>
         <button class="close-share" onclick="closeShareDialog()">关闭</button>
@@ -603,7 +603,7 @@
                 <span class="tech-badge">Tailwind CSS</span>
             </div>
             <p style="margin-top: 1rem; font-size: 0.8rem;">
-                <a href="https://github.com/yourusername/xmas-dream" target="_blank">
+                <a href="https://github.com/offshore4190/xmas" target="_blank">
                     <i class="fa-brands fa-github"></i> View on GitHub
                 </a>
             </p>
@@ -694,10 +694,10 @@
             document.body.removeChild(input);
         }
 
-        function shareToTwitter() {
+        function shareToX() {
             const text = encodeURIComponent('🎄 来体验这个超酷的3D圣诞树！可以上传照片、自定义配色，还有AI手势控制！');
             const url = encodeURIComponent(shareUrl);
-            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+            window.open(`https://x.com/intent/tweet?text=${text}&url=${url}`, '_blank');
         }
 
         // 点击弹窗外部关闭
