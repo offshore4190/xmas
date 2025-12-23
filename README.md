@@ -27,9 +27,9 @@
 
 访问以下链接即可体验：
 
-- 🏠 **入口页面**: [https://yourusername.github.io/xmas-dream/](https://yourusername.github.io/xmas-dream/)
-- 🎨 **定制版**: [https://yourusername.github.io/xmas-dream/xmas-custom.html](https://yourusername.github.io/xmas-dream/xmas-custom.html)
-- 🤚 **手势版**: [https://yourusername.github.io/xmas-dream/xmas-gesture.html](https://yourusername.github.io/xmas-dream/xmas-gesture.html)
+- 🏠 **入口页面**: [https://offshore4190.github.io/xmas/](https://offshore4190.github.io/xmas/)
+- 🎨 **定制版**: [https://offshore4190.github.io/xmas/xmas-custom.html](https://offshore4190.github.io/xmas/xmas-custom.html)
+- 🤚 **手势版**: [https://offshore4190.github.io/xmas/xmas-gesture.html](https://offshore4190.github.io/xmas/xmas-gesture.html)
 
 ## 🛠️ 技术栈
 
@@ -48,8 +48,8 @@
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/yourusername/xmas-dream.git
-   cd xmas-dream
+   git clone https://github.com/offshore4190/xmas.git
+   cd xmas
    ```
 
 2. **启动本地服务器**
@@ -89,10 +89,11 @@
 ## 📁 项目结构
 
 ```
-xmas-dream/
+xmas/
 ├── index.html          # 入口页面（选择模式）
 ├── xmas-custom.html    # 定制版（照片、配色、卡片）
-├── xmas-gesture.html   # 手势版（AI 交互）
+├── xmas-gesture.html   # 手势版（AI 手势控制）
+├── .gitignore          # Git 忽略规则
 └── README.md           # 项目说明
 ```
 
@@ -153,8 +154,8 @@ MIT License - 自由使用、修改、分发
 ## 📮 联系方式
 
 如有问题或建议，欢迎：
-- 提交 [Issue](https://github.com/yourusername/xmas-dream/issues)
-- 发送邮件至：your.email@example.com
+- 提交 [Issue](https://github.com/offshore4190/xmas/issues)
+- 访问项目主页：[GitHub](https://github.com/offshore4190/xmas)
 
 ---
 
